@@ -181,7 +181,7 @@ function App() {
         <div className="form-group">
           <label>上傳對話紀錄 (支援 CSV 或 TXT)</label>
           <div 
-            className={\`dropzone \${isDragging ? 'active' : ''}\`}
+            className={`dropzone ${isDragging ? 'active' : ''}`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
