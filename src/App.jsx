@@ -51,8 +51,15 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
   const [copied, setCopied] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [showGuide, setShowGuide] = useState(() => {
+    return localStorage.getItem('has_seen_guide') !== 'true';
+  });
   const fileInputRef = useRef(null);
+
+  const closeGuide = () => {
+    localStorage.setItem('has_seen_guide', 'true');
+    setShowGuide(false);
+  };
 
   const handleApiKeyChange = (e) => {
     const val = e.target.value;
@@ -252,6 +259,27 @@ function App() {
             readOnly
             placeholder={isProcessing ? "AI 正在為您彙整資料，這可能需要幾十秒鐘的時間..." : ""}
           ></textarea>
+        </div>
+      )}
+
+      {showGuide && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>歡迎使用「教師輔導紀錄小幫手」</h2>
+            <p>這個工具能幫您把雜亂的家長對話紀錄，自動整理成專業的「親師訪談紀錄表」。</p>
+            <p>為了能夠自動「擷取重點」與「去除情緒化字眼」，本系統採用 Google 的 <strong>Gemini AI</strong> 進行語意分析。為了保障學生隱私且維持工具免費運作，您需要設定專屬的 API Key：</p>
+            <ul>
+              <li>您的資料與 API Key <strong>只會存在您的瀏覽器中</strong>，絕不會被第三方側錄或上傳。</li>
+              <li>Google 提供<strong>免費額度</strong>，對於日常教學整理對話來說絕對夠用！</li>
+            </ul>
+            <p>
+              <strong>如何取得 API Key？</strong><br/>
+              請前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>，登入後點選「Create API key」，然後複製並貼上到網頁中的設定欄位即可。
+            </p>
+            <div className="modal-actions">
+              <button className="btn" onClick={closeGuide}>我了解了，開始使用</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
