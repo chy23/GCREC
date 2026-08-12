@@ -54,6 +54,7 @@ function App() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
     try { return localStorage.getItem('has_seen_guide') !== 'true'; }
     catch(e) { return true; }
