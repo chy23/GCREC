@@ -46,25 +46,29 @@ const SYSTEM_PROMPT = `你是一位心思細密、教學態度嚴謹、行政紀
 以下為對話紀錄：\n`;
 
 function App() {
-  const [apiKey, setApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => {
+    try { return localStorage.getItem('gemini_api_key') || ''; }
+    catch(e) { return ''; }
+  });
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
   const [copied, setCopied] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
-    return localStorage.getItem('has_seen_guide') !== 'true';
+    try { return localStorage.getItem('has_seen_guide') !== 'true'; }
+    catch(e) { return true; }
   });
   const fileInputRef = useRef(null);
 
   const closeGuide = () => {
-    localStorage.setItem('has_seen_guide', 'true');
+    try { localStorage.setItem('has_seen_guide', 'true'); } catch(e) {}
     setShowGuide(false);
   };
 
   const handleApiKeyChange = (e) => {
     const val = e.target.value;
     setApiKey(val);
-    localStorage.setItem('gemini_api_key', val);
+    try { localStorage.setItem('gemini_api_key', val); } catch(e) {}
   };
 
   const handleDragOver = (e) => {
