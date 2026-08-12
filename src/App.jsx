@@ -267,15 +267,22 @@ function App() {
           <div className="modal-content">
             <h2>歡迎使用「教師輔導紀錄小幫手」</h2>
             <p>這個工具能幫您把雜亂的家長對話紀錄，自動整理成專業的「親師訪談紀錄表」。</p>
-            <p>為了能夠自動「擷取重點」與「去除情緒化字眼」，本系統採用 Google 的 <strong>Gemini AI</strong> 進行語意分析。為了保障學生隱私且維持工具免費運作，您需要設定專屬的 API Key：</p>
-            <ul>
-              <li>您的資料與 API Key <strong>只會存在您的瀏覽器中</strong>，絕不會被第三方側錄或上傳。</li>
-              <li>Google 提供<strong>免費額度</strong>，對於日常教學整理對話來說絕對夠用！</li>
-            </ul>
-            <p>
-              <strong>如何取得 API Key？</strong><br/>
-              請前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>，登入後點選「Create API key」，然後複製並貼上到網頁中的設定欄位即可。
-            </p>
+            
+            <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>操作步驟四部曲：</h3>
+            <ol style={{ paddingLeft: '1.5rem', marginBottom: '1.5rem', lineHeight: '1.8' }}>
+              <li>
+                <strong>設定 API Key：</strong>為了自動「擷取重點」與「客觀化」，本系統採用 Google Gemini AI。請前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 申請免費 Key 並填入。（您的資料與 Key <strong>只會存在本機瀏覽器</strong>，絕無外流風險）
+              </li>
+              <li>
+                <strong>匯出對話紀錄：</strong>請將通訊軟體（如 LINE）中的家長對話紀錄匯出為 <strong>CSV</strong> 或 <strong>TXT 文字檔</strong>。
+              </li>
+              <li>
+                <strong>上傳檔案：</strong>點擊或直接將一個/多個對話檔案拖曳至網頁的「上傳對話紀錄」區塊中。
+              </li>
+              <li>
+                <strong>一鍵轉換：</strong>點擊「開始轉換紀錄」，系統便會自動為每位學生產生一份排版完美的訪談紀錄，您可以直接一鍵複製到 Google 文件 (Google Docs) 中！
+              </li>
+            </ol>
             <div className="modal-actions">
               <button className="btn" onClick={closeGuide}>我了解了，開始使用</button>
             </div>
