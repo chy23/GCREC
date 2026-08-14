@@ -277,3 +277,54 @@ body {
   from { transform: scale(0.95); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+.changelog-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.changelog-item {
+  border-left: 3px solid var(--primary);
+  padding-left: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.changelog-version {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.changelog-version span.badge {
+  background: var(--primary);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.changelog-date {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.changelog-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.changelog-details {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.changelog-bugs {
+  font-size: 0.9rem;
+  color: #DC2626;
+  background: #FEF2F2;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
