@@ -1,0 +1,93 @@
+[
+  {
+    "version": "v-24a8e17",
+    "date": "2026-08-14",
+    "title": "Add changelog modal with history from git commits",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-059e245",
+    "date": "2026-08-14",
+    "title": "Implement model fallback sequence: 3.5-flash -> 3.6-flash -> 3.7-flash -> 3.1-pro-preview",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-5ea113c",
+    "date": "2026-08-12",
+    "title": "Update guide text to remove 'free' from API key description",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-f01dd4b",
+    "date": "2026-08-12",
+    "title": "Restore accidentally deleted isDragging state to fix runtime crash",
+    "details": "常規更新或效能優化",
+    "bugs": "系統修正：Restore accidentally deleted isDragging state to fix runtime crash"
+  },
+  {
+    "version": "v-724fd3f",
+    "date": "2026-08-12",
+    "title": "Wrap all localStorage calls in try-catch to prevent blank screen crashes",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-2850bde",
+    "date": "2026-08-12",
+    "title": "Update usage guide to include file upload instructions",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-c7e1380",
+    "date": "2026-08-12",
+    "title": "Add usage guide modal for first-time users",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-fff2475",
+    "date": "2026-08-12",
+    "title": "Fix missing dependencies in package.json and remaining syntax error",
+    "details": "常規更新或效能優化",
+    "bugs": "系統修正：Fix missing dependencies in package.json and remaining syntax error"
+  },
+  {
+    "version": "v-fa70295",
+    "date": "2026-08-12",
+    "title": "Fix syntax error in App.jsx breaking Vite build",
+    "details": "常規更新或效能優化",
+    "bugs": "系統修正：Fix syntax error in App.jsx breaking Vite build"
+  },
+  {
+    "version": "v-aeff83f",
+    "date": "2026-08-12",
+    "title": "Add GitHub Actions workflow for deploying to Pages",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-98874b6",
+    "date": "2026-08-12",
+    "title": "Fix GitHub Pages asset paths by setting base URL",
+    "details": "常規更新或效能優化",
+    "bugs": "系統修正：Fix GitHub Pages asset paths by setting base URL"
+  },
+  {
+    "version": "v-8c684bb",
+    "date": "2026-08-12",
+    "title": "Initial commit: Add parent-teacher summarizer web app",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-5e363c2",
+    "date": "2026-08-07",
+    "title": "Add files via upload",
+    "details": "常規更新或效能優化",
+    "bugs": "無"
+  }
+]

@@ -3,43 +3,7 @@ import Papa from 'papaparse';
 import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History } from 'lucide-react';
 import './index.css';
 
-const CHANGELOG = [
-  {
-    version: "v1.2.0",
-    date: "2026-08-14",
-    title: "AI 備援機制與更新紀錄",
-    details: "加入自動備援 (Fallback) 的模型呼叫順序 (3.5-flash -> 3.6-flash -> 3.7-flash -> 3.1-pro-preview)，並新增更新紀錄介面。",
-    bugs: "無"
-  },
-  {
-    version: "v1.1.2",
-    date: "2026-08-12",
-    title: "初次使用說明優化",
-    details: "移除 API Key 申請說明中的「免費」字眼以避免誤導；更新上傳操作步驟指示。",
-    bugs: "修復在無痕模式或阻擋 Cookie 的瀏覽器下，因 localStorage 無法存取導致畫面空白的嚴重錯誤 (Runtime Crash)。同時補回遺失的拖曳狀態變數。"
-  },
-  {
-    version: "v1.1.1",
-    date: "2026-08-12",
-    title: "系統穩定性修復",
-    details: "將遺失的外部依賴套件補齊，確保 GitHub Actions 雲端編譯環境一致。",
-    bugs: "修復 App.jsx 中因跳脫字元導致的 Vite 建置失敗問題。"
-  },
-  {
-    version: "v1.1.0",
-    date: "2026-08-12",
-    title: "自動化部署與發布機制",
-    details: "設定 GitHub Actions 自動編譯與發布腳本 (CI/CD)，並修正 GitHub Pages 的 Base URL 路徑。",
-    bugs: "修復靜態原始碼無法在 GitHub Pages 正常編譯並顯示空白網頁的問題。"
-  },
-  {
-    version: "v1.0.0",
-    date: "2026-08-07",
-    title: "初始版本上線",
-    details: "教師輔導紀錄小幫手正式上線。支援拖曳多個 CSV/TXT 檔案，並自動調用 Gemini AI 將家長對話轉化為客觀的輔導紀錄。",
-    bugs: "無"
-  }
-];
+import CHANGELOG from './changelog.json';
 
 const SYSTEM_PROMPT = `你是一位心思細密、教學態度嚴謹、行政紀錄極具專業感的國小班導師。你的任務是將使用者提供的家長與老師對話紀錄（例如通訊軟體匯出的 CSV 檔案或聊天文字）進行重點節錄，轉化為客觀、標準化的「親師訪談紀錄表」。
 
