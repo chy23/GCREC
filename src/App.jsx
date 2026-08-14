@@ -121,30 +121,54 @@ function App() {
       for (const file of files) {
         combinedData += `--- 檔案：${file.name} ---\n`;
         const text = await file.text();
-        // Since different chat exports have different formats, we'll just pass the raw text to Gemini
-        // Gemini is smart enough to extract the dialogue if it's a CSV or TXT.
         combinedData += text + '\n\n';
       }
 
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: SYSTEM_PROMPT + combinedData }]
-            }
-          ]
-        })
-      });
+      const modelsToTry = [
+        'gemini-3.5-flash',
+        'gemini-3.6-flash',
+        'gemini-3.7-flash',
+        'gemini-3.1-pro-preview'
+      ];
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'API 呼叫失敗');
+      let generatedText = null;
+      let lastError = null;
+
+      for (const model of modelsToTry) {
+        try {
+          console.log(`嘗試使用模型: ${model}`);
+          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [{ text: SYSTEM_PROMPT + combinedData }]
+                }
+              ]
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `模型 ${model} 呼叫失敗`);
+          }
+
+          const data = await response.json();
+          generatedText = data.candidates[0].content.parts[0].text;
+          console.log(`模型 ${model} 成功產出結果`);
+          break; // 成功則跳出迴圈，不再嘗試下一個模型
+        } catch (error) {
+          console.warn(`模型 ${model} 失敗:`, error.message);
+          lastError = error;
+          // 繼續下一次迴圈嘗試下一個模型
+        }
       }
 
-      const data = await response.json();
-      const generatedText = data.candidates[0].content.parts[0].text;
+      if (!generatedText) {
+        throw new Error(`所有模型皆嘗試失敗。最後錯誤: ${lastError.message}`);
+      }
+
       setResult(generatedText);
 
     } catch (error) {
