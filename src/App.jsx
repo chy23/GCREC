@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, LayoutGrid, Highlighter } from 'lucide-react';
+import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter } from 'lucide-react';
 import './index.css';
 
 import CHANGELOG from './changelog.json';
@@ -392,42 +392,6 @@ function App() {
                   )}
                   {viewMode === 'document' && (
                     <div className="a4-document-view">{result}</div>
-                  )}
-                  {viewMode === 'card' && (
-                    <div className="rich-cards-container">
-                      {parseResultText(result).map((student, sIdx) => (
-                        <div key={sIdx} className="student-section">
-                          <div className="student-section-header">
-                            {student.studentName}
-                          </div>
-                          {student.records.map((rec, rIdx) => (
-                            <div key={rIdx} className="record-card">
-                              <div className="record-card-header">
-                                <div>
-                                  <div className="record-card-title">{rec.topic}</div>
-                                  <div className="record-card-meta">
-                                    <span style={{ fontWeight: 600 }}>紀錄 {rec.id}</span>
-                                    <span>{rec.date}</span>
-                                  </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  <span className="rich-tag method">{rec.method}</span>
-                                  <span className="rich-tag person">{rec.person}</span>
-                                </div>
-                              </div>
-                              <div className="record-section">
-                                <div className="record-section-title">事件紀錄</div>
-                                <div className="record-section-content">{rec.event}</div>
-                              </div>
-                              <div className="record-section" style={{ background: '#F3F4F6' }}>
-                                <div className="record-section-title">家長回應</div>
-                                <div className="record-section-content">{rec.response}</div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
                   )}
                 </div>
               </div>
