@@ -52,6 +52,7 @@ function App() {
     try { return localStorage.getItem('gemini_api_key') || ''; }
     catch(e) { return ''; }
   });
+  const [isApiKeySet, setIsApiKeySet] = useState(() => !!apiKey);
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
@@ -215,6 +216,40 @@ function App() {
       <div className="main-layout">
         {/* Left Column: Upload */}
         <div className="layout-col">
+
+        {!isApiKeySet && (
+          <div className="glass-card" style={{ border: '2px solid var(--primary)' }}>
+            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+              <Settings size={20} />
+              第一步：設定 API Key
+            </h3>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
+              為了讓 AI 替您產出紀錄，請先輸入您的 Gemini API Key。設定完成後此欄位將會自動隱藏，未來可至右上角「設定」中修改。
+            </p>
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <input 
+                type="password" 
+                className="input-field" 
+                placeholder="輸入您的 Gemini API Key..." 
+                value={apiKey}
+                onChange={handleApiKeyChange}
+              />
+            </div>
+            <button 
+              className="btn" 
+              onClick={() => {
+                if(apiKey.trim().length > 10) {
+                  setIsApiKeySet(true);
+                } else {
+                  alert("請輸入有效的 API Key");
+                }
+              }}
+              disabled={!apiKey.trim()}
+            >
+              完成設定並繼續
+            </button>
+          </div>
+        )}
 
         <div className="glass-card">
         <div className="form-group">
