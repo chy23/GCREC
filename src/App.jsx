@@ -54,7 +54,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
-  const [viewMode, setViewMode] = useState('card');
+  const [viewMode, setViewMode] = useState('highlight');
   const [copied, setCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -462,9 +462,9 @@ function App() {
                   </h3>
                   
                   <div className="view-mode-selector">
-                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
-                    <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
                     <button className={`view-mode-btn ${viewMode === 'highlight' ? 'active' : ''}`} onClick={() => setViewMode('highlight')}><Highlighter size={16}/> 重點高亮</button>
+                    <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
+                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
                   </div>
 
                   <button className="btn btn-secondary" onClick={copyToClipboard} style={{ marginLeft: 'auto' }}>
@@ -474,11 +474,11 @@ function App() {
                 </div>
                 
                 <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {viewMode === 'document' && (
-                    <div className="a4-document-view">{result}</div>
-                  )}
                   {viewMode === 'highlight' && (
                     <div className="highlight-view">{renderHighlightedText(result)}</div>
+                  )}
+                  {viewMode === 'document' && (
+                    <div className="a4-document-view">{result}</div>
                   )}
                   {viewMode === 'card' && (
                     <div className="rich-cards-container">
