@@ -455,19 +455,21 @@ function App() {
               </div>
             ) : result ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="action-bar" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                    <AlertCircle size={20} color="var(--secondary)" />
-                    轉換結果
-                  </h3>
-                  
-                  <div className="view-mode-selector">
-                    <button className={`view-mode-btn ${viewMode === 'highlight' ? 'active' : ''}`} onClick={() => setViewMode('highlight')}><Highlighter size={16}/> 重點高亮</button>
-                    <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
-                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                      <AlertCircle size={20} color="var(--secondary)" />
+                      轉換結果
+                    </h3>
+                    
+                    <div className="view-mode-selector">
+                      <button className={`view-mode-btn ${viewMode === 'highlight' ? 'active' : ''}`} onClick={() => setViewMode('highlight')}><Highlighter size={16}/> 重點高亮</button>
+                      <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
+                      <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
+                    </div>
                   </div>
 
-                  <button className="btn btn-secondary" onClick={copyToClipboard} style={{ marginLeft: 'auto' }}>
+                  <button className="btn btn-secondary" onClick={copyToClipboard} style={{ flexShrink: 0 }}>
                     {copied ? <Check size={18} color="var(--secondary)" /> : <Copy size={18} />}
                     {copied ? '已複製！' : '複製純文字 (Word)'}
                   </button>
