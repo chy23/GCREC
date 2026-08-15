@@ -102,41 +102,71 @@ function App() {
 
   const parseResultText = (text) => {
     if (!text) return [];
-    const students = text.split(/={10,}/).filter(s => s.trim().length > 0);
+    // 支援更多種分隔線，不僅限於 10 個 =
+    const students = text.split(/={5,}/).filter(s => s.trim().length > 0);
     const parsedData = [];
 
     students.forEach(studentStr => {
+      // 容錯擷取姓名：找尋 【 ... 】 內的文字
       const headerMatch = studentStr.match(/【(.*?)】/);
       if (!headerMatch) return;
       const studentName = headerMatch[1].trim();
       
-      const records = studentStr.split(/-{10,}/).filter(r => r.trim().length > 0 && r.includes('紀錄'));
+      // 分隔紀錄。有的時候 AI 會用 ---，有的時候可能沒有用 --- 而是直接寫 "紀錄 2"
+      // 這裡採用以 "紀錄 [數字]" 作為切割點的策略更安全
+      const recordBlocks = studentStr.split(/(?=紀錄\s*\d+)/).filter(r => r.trim().length > 0 && r.includes('紀錄'));
       
-      const parsedRecords = records.map(recordStr => {
-        const getField = (keyword, nextKeyword) => {
-          if (nextKeyword) {
-            const regex = new RegExp(`${keyword}([\\s\\S]*?)${nextKeyword}`);
-            const match = recordStr.match(regex);
-            return match ? match[1].trim() : '';
-          } else {
-            const regex = new RegExp(`${keyword}([\\s\\S]*)`);
-            const match = recordStr.match(regex);
-            return match ? match[1].trim() : '';
+      const parsedRecords = recordBlocks.map(recordStr => {
+        let record = { id: '?', method: '', person: '', date: '', topic: '', event: '', response: '' };
+        let currentField = '';
+        
+        const lines = recordStr.split('\n');
+        for (let rawLine of lines) {
+          // 移除前後空白包含全形空白
+          const line = rawLine.replace(/^[ \t\u3000]+|[ \t\u3000]+$/g, '');
+          
+          if (line.match(/^紀錄\s*(\d+)/)) { 
+            record.id = line.match(/^紀錄\s*(\d+)/)[1]; 
           }
-        };
+          else if (line.match(/^訪談方式[:：]\s*(.*)/)) { 
+            record.method = line.match(/^訪談方式[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'method'; 
+          }
+          else if (line.match(/^訪談對象[:：]\s*(.*)/)) { 
+            record.person = line.match(/^訪談對象[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'person'; 
+          }
+          else if (line.match(/^訪談日期[:：]\s*(.*)/)) { 
+            record.date = line.match(/^訪談日期[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'date'; 
+          }
+          else if (line.match(/^輔導內容要點[:：]\s*(.*)/)) { 
+            record.topic = line.match(/^輔導內容要點[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'topic'; 
+          }
+          else if (line.match(/^聯絡事項[:：]?$/)) { 
+            currentField = ''; 
+          }
+          else if (line.match(/^事件紀錄[:：]\s*(.*)/)) { 
+            record.event = line.match(/^事件紀錄[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'event'; 
+          }
+          else if (line.match(/^家長回應[:：]\s*(.*)/)) { 
+            record.response = line.match(/^家長回應[:：]\s*(.*)/)[1].trim(); 
+            currentField = 'response'; 
+          }
+          else if (currentField && line.length > 0 && !line.match(/^-{5,}/)) {
+            // 如果是多行文字，且不是分隔線，就附加到當前欄位
+            record[currentField] += (record[currentField] ? '\n' : '') + line;
+          }
+        }
+        return record;
+      }).filter(r => r.topic || r.event || r.response);
 
-        return {
-          id: (recordStr.match(/紀錄\s*(\d+)/) || [])[1] || '?',
-          method: getField('訪談方式：', '訪談對象：'),
-          person: getField('訪談對象：', '訪談日期：'),
-          date: getField('訪談日期：', '輔導內容要點：'),
-          topic: getField('輔導內容要點：', '聯絡事項：'),
-          event: getField('事件紀錄：', '家長回應：'),
-          response: getField('家長回應：')
-        };
-      }).filter(r => r.topic || r.event);
-
-      parsedData.push({ studentName, records: parsedRecords });
+      // 如果有解析出紀錄，才放入陣列
+      if (parsedRecords.length > 0) {
+        parsedData.push({ studentName, records: parsedRecords });
+      }
     });
     return parsedData;
   };
