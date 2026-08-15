@@ -49,11 +49,8 @@ const SYSTEM_PROMPT = `你是一位心思細密、教學態度嚴謹、行政紀
 以下為對話紀錄：\n`;
 
 function App() {
-  const [apiKey, setApiKey] = useState(() => {
-    try { return localStorage.getItem('gemini_api_key') || ''; }
-    catch(e) { return ''; }
-  });
-  const [isApiKeySet, setIsApiKeySet] = useState(() => !!apiKey);
+  const [apiKey, setApiKey] = useState('');
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
@@ -73,9 +70,7 @@ function App() {
   };
 
   const handleApiKeyChange = (e) => {
-    const val = e.target.value;
-    setApiKey(val);
-    try { localStorage.setItem('gemini_api_key', val); } catch(e) {}
+    setApiKey(e.target.value);
   };
 
   const handleDragOver = (e) => {
@@ -396,7 +391,7 @@ function App() {
                 onChange={handleApiKeyChange}
               />
               <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem', lineHeight: '1.5' }}>
-                *為了保護您的隱私，API Key 僅儲存在您的瀏覽器本地端，絕對不會外流。<br/>
+                *基於極致的隱私安全，您的 API Key 絕對不會被儲存，每次重新載入網頁皆須重新輸入。<br/>
                 *如果您發現無法轉換，請檢查您的 Key 是否正確或額度已滿。
               </small>
             </div>
@@ -417,7 +412,7 @@ function App() {
             <h3 style={{ marginTop: '1.5rem', marginBottom: '0.5rem', color: 'var(--primary)' }}>操作步驟四部曲：</h3>
             <ol style={{ paddingLeft: '1.5rem', marginBottom: '1.5rem', lineHeight: '1.8' }}>
               <li>
-                <strong>設定 API Key：</strong>為了自動「擷取重點」與「客觀化」，本系統採用 Google Gemini AI。請前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 申請 API Key 並填入。（您的資料與 Key <strong>只會存在本機瀏覽器</strong>，絕無外流風險）
+                <strong>設定 API Key：</strong>為了自動「擷取重點」與「客觀化」，本系統採用 Google Gemini AI。請前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a> 申請 API Key 並填入。（基於隱私安全，API Key <strong>不會被儲存</strong>，每次開啟網頁皆須重新輸入）
               </li>
               <li>
                 <strong>匯出對話紀錄：</strong>請將通訊軟體（如 LINE）中的家長對話紀錄匯出為 <strong>CSV</strong> 或 <strong>TXT 文字檔</strong>。
