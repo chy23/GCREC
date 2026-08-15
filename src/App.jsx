@@ -100,95 +100,7 @@ function App() {
     }
   };
 
-  const parseResultText = (text) => {
-    if (!text) return [];
-    
-    // 容錯提取：掃描所有的【 ... 】，並根據它們的位置將文本分段
-    const parsedData = [];
-    
-    // 找出所有的 header 位置
-    const headerRegex = /【(.*?)】/g;
-    let match;
-    const students = [];
-    
-    while ((match = headerRegex.exec(text)) !== null) {
-      students.push({
-        name: match[1].trim(),
-        startIndex: match.index,
-        endIndex: -1
-      });
-    }
-    
-    if (students.length === 0) {
-      // 找不到任何 【 】，可能只有一位學生，直接嘗試解析整個文本
-      students.push({ name: '學生紀錄', startIndex: 0, endIndex: text.length });
-    } else {
-      for (let i = 0; i < students.length; i++) {
-        if (i < students.length - 1) {
-          students[i].endIndex = students[i+1].startIndex;
-        } else {
-          students[i].endIndex = text.length;
-        }
-      }
-    }
-    
-    students.forEach(studentInfo => {
-      const studentStr = text.substring(studentInfo.startIndex, studentInfo.endIndex);
-      
-      const recordBlocks = studentStr.split(/(?=紀錄\s*\d+)/).filter(r => r.trim().length > 0 && r.includes('紀錄'));
-      
-      const parsedRecords = recordBlocks.map(recordStr => {
-        let record = { id: '?', method: '', person: '', date: '', topic: '', event: '', response: '' };
-        let currentField = '';
-        
-        const lines = recordStr.split('\n');
-        for (let rawLine of lines) {
-          // 移除前後空白包含全形空白與 Markdown 項目符號
-          const line = rawLine.replace(/^[ \t\u3000\*\-•]+|[ \t\u3000]+$/g, '');
-          
-          if (line.match(/^紀錄\s*(\d+)/)) { 
-            record.id = line.match(/^紀錄\s*(\d+)/)[1]; 
-          }
-          else if (line.match(/^訪談方式[:：]\s*(.*)/)) { 
-            record.method = line.match(/^訪談方式[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'method'; 
-          }
-          else if (line.match(/^訪談對象[:：]\s*(.*)/)) { 
-            record.person = line.match(/^訪談對象[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'person'; 
-          }
-          else if (line.match(/^訪談日期[:：]\s*(.*)/)) { 
-            record.date = line.match(/^訪談日期[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'date'; 
-          }
-          else if (line.match(/^輔導內容(?:要點)?[:：]\s*(.*)/)) { 
-            record.topic = line.match(/^輔導內容(?:要點)?[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'topic'; 
-          }
-          else if (line.match(/^聯絡事項[:：]?$/)) { 
-            currentField = ''; 
-          }
-          else if (line.match(/^事件紀?錄[:：]\s*(.*)/)) { 
-            record.event = line.match(/^事件紀?錄[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'event'; 
-          }
-          else if (line.match(/^家長回(?:應|覆)[:：]\s*(.*)/)) { 
-            record.response = line.match(/^家長回(?:應|覆)[:：]\s*(.*)/)[1].trim(); 
-            currentField = 'response'; 
-          }
-          else if (currentField && line.length > 0 && !line.match(/^[-=]{5,}/)) {
-            record[currentField] += (record[currentField] ? '\n' : '') + line;
-          }
-        }
-        return record;
-      }).filter(r => r.topic || r.event || r.response || r.method);
 
-      if (parsedRecords.length > 0) {
-        parsedData.push({ studentName: studentInfo.name, records: parsedRecords });
-      }
-    });
-    return parsedData;
-  };
 
   const renderHighlightedText = (text) => {
     const lines = text.split('\n');
@@ -465,7 +377,6 @@ function App() {
                     <div className="view-mode-selector">
                       <button className={`view-mode-btn ${viewMode === 'highlight' ? 'active' : ''}`} onClick={() => setViewMode('highlight')}><Highlighter size={16}/> 重點高亮</button>
                       <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
-                      <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
                     </div>
                   </div>
 
