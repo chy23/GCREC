@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History } from 'lucide-react';
+import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox } from 'lucide-react';
 import './index.css';
 
 import CHANGELOG from './changelog.json';
@@ -58,6 +58,7 @@ function App() {
   const [copied, setCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
     try { return localStorage.getItem('has_seen_guide') !== 'true'; }
     catch(e) { return true; }
@@ -193,36 +194,29 @@ function App() {
   return (
     <div className="app-container">
       <div className="header" style={{ position: 'relative' }}>
-        <button 
-          onClick={() => setShowChangelog(true)}
-          style={{ position: 'absolute', top: 0, right: 0, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)' }}
-        >
-          <History size={18} /> 更新紀錄
-        </button>
+        <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '1rem' }}>
+          <button 
+            onClick={() => setShowSettings(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}
+          >
+            <Settings size={18} /> 設定
+          </button>
+          <button 
+            onClick={() => setShowChangelog(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}
+          >
+            <History size={18} /> 更新紀錄
+          </button>
+        </div>
         <h1>教師輔導紀錄小幫手</h1>
         <p>一鍵將對話紀錄轉化為標準化的親師訪談紀錄表</p>
       </div>
 
-      <div className="glass-card">
-        <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Settings size={20} color="var(--text-muted)" />
-          <label style={{ margin: 0 }}>設定 Gemini API Key</label>
-        </div>
-        <div className="form-group">
-          <input 
-            type="password" 
-            className="input-field" 
-            placeholder="輸入您的 Gemini API Key..." 
-            value={apiKey}
-            onChange={handleApiKeyChange}
-          />
-          <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem' }}>
-            *API Key 會儲存在您的瀏覽器中，不會上傳至任何伺服器。
-          </small>
-        </div>
-      </div>
+      <div className="main-layout">
+        {/* Left Column: Upload */}
+        <div className="layout-col">
 
-      <div className="glass-card">
+        <div className="glass-card">
         <div className="form-group">
           <label>上傳對話紀錄 (支援 CSV 或 TXT)</label>
           <div 
@@ -248,16 +242,21 @@ function App() {
 
         {files.length > 0 && (
           <div style={{ marginTop: '1.5rem' }}>
-            <h4 style={{ marginBottom: '1rem' }}>已選擇的檔案：</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <h4 style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>已選擇的檔案 ({files.length})</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {files.map((f, idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'rgba(255,255,255,0.6)', borderRadius: '8px', border: '1px solid #E5E7EB' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FileText size={18} color="var(--primary)" />
-                    <span>{f.name}</span>
+                <div key={idx} className="file-card">
+                  <div className="file-card-info">
+                    <div className="file-card-icon">
+                      <FileText size={20} />
+                    </div>
+                    <div className="file-card-meta">
+                      <h5>{f.name}</h5>
+                      <span>{(f.size / 1024).toFixed(1)} KB</span>
+                    </div>
                   </div>
-                  <button onClick={() => removeFile(idx)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontWeight: 500 }}>
-                    移除
+                  <button className="file-card-remove" onClick={() => removeFile(idx)} title="移除檔案">
+                    <X size={16} />
                   </button>
                 </div>
               ))}
@@ -279,24 +278,97 @@ function App() {
         </div>
       </div>
 
-      {(result || isProcessing) && (
-        <div className="glass-card" style={{ scrollMarginTop: '2rem' }} id="result-section">
-          <div className="action-bar">
-            <h3 style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={20} color="var(--secondary)" />
-              轉換結果
-            </h3>
-            <button className="btn btn-secondary" onClick={copyToClipboard} disabled={!result}>
-              {copied ? <Check size={18} color="var(--secondary)" /> : <Copy size={18} />}
-              {copied ? '已複製！' : '複製到 Google 文件'}
-            </button>
+        </div>
+
+        {/* Right Column: Results / Skeleton / Empty State */}
+        <div className="layout-col">
+          <div className="glass-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {isProcessing ? (
+              <div style={{ flex: 1 }}>
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                  <AlertCircle size={20} color="var(--primary)" />
+                  AI 正在努力撰寫中...
+                </h3>
+                <div className="skeleton-container">
+                  <div className="skeleton-header">
+                    <div className="skeleton-avatar"></div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div className="skeleton-line w-40"></div>
+                      <div className="skeleton-line w-60"></div>
+                    </div>
+                  </div>
+                  <div className="skeleton-line w-100"></div>
+                  <div className="skeleton-line w-100"></div>
+                  <div className="skeleton-line w-80"></div>
+                  <br/>
+                  <div className="skeleton-line w-100"></div>
+                  <div className="skeleton-line w-60"></div>
+                </div>
+              </div>
+            ) : result ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="action-bar" style={{ marginBottom: '1rem' }}>
+                  <h3 style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={20} color="var(--secondary)" />
+                    轉換結果
+                  </h3>
+                  <button className="btn btn-secondary" onClick={copyToClipboard}>
+                    {copied ? <Check size={18} color="var(--secondary)" /> : <Copy size={18} />}
+                    {copied ? '已複製！' : '複製到 Google 文件'}
+                  </button>
+                </div>
+                <textarea 
+                  className="result-area" 
+                  style={{ flex: 1, minHeight: '400px' }}
+                  value={result} 
+                  readOnly
+                ></textarea>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state-icon">
+                  <Inbox size={32} />
+                </div>
+                <h3>等待檔案上傳中</h3>
+                <p>上傳您的對話紀錄檔案後，精美的訪談紀錄表就會顯示在這裡。</p>
+              </div>
+            )}
           </div>
-          <textarea 
-            className="result-area" 
-            value={result} 
-            readOnly
-            placeholder={isProcessing ? "AI 正在為您彙整資料，這可能需要幾十秒鐘的時間..." : ""}
-          ></textarea>
+        </div>
+      </div>
+
+      {showSettings && (
+        <div className="modal-overlay" onClick={() => setShowSettings(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Settings size={24} color="var(--primary)" />
+                系統設定
+              </h2>
+              <button onClick={() => setShowSettings(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={24} color="var(--text-muted)" />
+              </button>
+            </div>
+            
+            <div className="form-group">
+              <label>Gemini API Key</label>
+              <input 
+                type="password" 
+                className="input-field" 
+                placeholder="輸入您的 Gemini API Key..." 
+                value={apiKey}
+                onChange={handleApiKeyChange}
+              />
+              <small style={{ color: 'var(--text-muted)', display: 'block', marginTop: '0.5rem', lineHeight: '1.5' }}>
+                *為了保護您的隱私，API Key 僅儲存在您的瀏覽器本地端，絕對不會外流。<br/>
+                *如果您發現無法轉換，請檢查您的 Key 是否正確或額度已滿。
+              </small>
+            </div>
+            
+            <div className="modal-actions" style={{ marginTop: '2rem' }}>
+              <button className="btn" onClick={() => setShowSettings(false)}>儲存並關閉</button>
+            </div>
+          </div>
         </div>
       )}
 
