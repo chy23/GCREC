@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox } from 'lucide-react';
+import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, LayoutGrid, Highlighter } from 'lucide-react';
 import './index.css';
 
 import CHANGELOG from './changelog.json';
@@ -54,6 +54,7 @@ function App() {
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState('');
+  const [viewMode, setViewMode] = useState('card');
   const [copied, setCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -97,6 +98,73 @@ function App() {
       const csvFiles = Array.from(e.target.files);
       setFiles(prev => [...prev, ...csvFiles]);
     }
+  };
+
+  const parseResultText = (text) => {
+    if (!text) return [];
+    const students = text.split(/={10,}/).filter(s => s.trim().length > 0);
+    const parsedData = [];
+
+    students.forEach(studentStr => {
+      const headerMatch = studentStr.match(/【(.*?)】/);
+      if (!headerMatch) return;
+      const studentName = headerMatch[1].trim();
+      
+      const records = studentStr.split(/-{10,}/).filter(r => r.trim().length > 0 && r.includes('紀錄'));
+      
+      const parsedRecords = records.map(recordStr => {
+        const getField = (keyword, nextKeyword) => {
+          if (nextKeyword) {
+            const regex = new RegExp(`${keyword}([\\s\\S]*?)${nextKeyword}`);
+            const match = recordStr.match(regex);
+            return match ? match[1].trim() : '';
+          } else {
+            const regex = new RegExp(`${keyword}([\\s\\S]*)`);
+            const match = recordStr.match(regex);
+            return match ? match[1].trim() : '';
+          }
+        };
+
+        return {
+          id: (recordStr.match(/紀錄\s*(\d+)/) || [])[1] || '?',
+          method: getField('訪談方式：', '訪談對象：'),
+          person: getField('訪談對象：', '訪談日期：'),
+          date: getField('訪談日期：', '輔導內容要點：'),
+          topic: getField('輔導內容要點：', '聯絡事項：'),
+          event: getField('事件紀錄：', '家長回應：'),
+          response: getField('家長回應：')
+        };
+      }).filter(r => r.topic || r.event);
+
+      parsedData.push({ studentName, records: parsedRecords });
+    });
+    return parsedData;
+  };
+
+  const renderHighlightedText = (text) => {
+    const lines = text.split('\n');
+    return lines.map((line, idx) => {
+      if (line.includes('====') || line.includes('----')) {
+        return <div key={idx} className="highlight-separator">{line}</div>;
+      }
+      
+      const keywords = ['訪談方式：', '訪談對象：', '訪談日期：', '輔導內容要點：', '聯絡事項：', '事件紀錄：', '家長回應：'];
+      for (const kw of keywords) {
+        if (line.includes(kw)) {
+          const parts = line.split(kw);
+          return (
+            <div key={idx}>
+              {parts[0]}<span className="highlight-keyword">{kw}</span>{parts[1]}
+            </div>
+          );
+        }
+      }
+      
+      if (line.startsWith('【') && line.endsWith('】')) {
+        return <div key={idx} style={{ color: '#60A5FA', fontWeight: 'bold', margin: '1rem 0' }}>{line}</div>;
+      }
+      return <div key={idx}>{line || ' '}</div>;
+    });
   };
 
   const removeFile = (index) => {
@@ -338,22 +406,68 @@ function App() {
               </div>
             ) : result ? (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="action-bar" style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ marginRight: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div className="action-bar" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                     <AlertCircle size={20} color="var(--secondary)" />
                     轉換結果
                   </h3>
-                  <button className="btn btn-secondary" onClick={copyToClipboard}>
+                  
+                  <div className="view-mode-selector">
+                    <button className={`view-mode-btn ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')}><LayoutGrid size={16}/> 智能卡片</button>
+                    <button className={`view-mode-btn ${viewMode === 'document' ? 'active' : ''}`} onClick={() => setViewMode('document')}><FileText size={16}/> A4 預覽</button>
+                    <button className={`view-mode-btn ${viewMode === 'highlight' ? 'active' : ''}`} onClick={() => setViewMode('highlight')}><Highlighter size={16}/> 重點高亮</button>
+                  </div>
+
+                  <button className="btn btn-secondary" onClick={copyToClipboard} style={{ marginLeft: 'auto' }}>
                     {copied ? <Check size={18} color="var(--secondary)" /> : <Copy size={18} />}
-                    {copied ? '已複製！' : '複製到 Google 文件'}
+                    {copied ? '已複製！' : '複製純文字 (Word)'}
                   </button>
                 </div>
-                <textarea 
-                  className="result-area" 
-                  style={{ flex: 1, minHeight: '400px' }}
-                  value={result} 
-                  readOnly
-                ></textarea>
+                
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                  {viewMode === 'document' && (
+                    <div className="a4-document-view">{result}</div>
+                  )}
+                  {viewMode === 'highlight' && (
+                    <div className="highlight-view">{renderHighlightedText(result)}</div>
+                  )}
+                  {viewMode === 'card' && (
+                    <div className="rich-cards-container">
+                      {parseResultText(result).map((student, sIdx) => (
+                        <div key={sIdx} className="student-section">
+                          <div className="student-section-header">
+                            {student.studentName}
+                          </div>
+                          {student.records.map((rec, rIdx) => (
+                            <div key={rIdx} className="record-card">
+                              <div className="record-card-header">
+                                <div>
+                                  <div className="record-card-title">{rec.topic}</div>
+                                  <div className="record-card-meta">
+                                    <span style={{ fontWeight: 600 }}>紀錄 {rec.id}</span>
+                                    <span>{rec.date}</span>
+                                  </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <span className="rich-tag method">{rec.method}</span>
+                                  <span className="rich-tag person">{rec.person}</span>
+                                </div>
+                              </div>
+                              <div className="record-section">
+                                <div className="record-section-title">事件紀錄</div>
+                                <div className="record-section-content">{rec.event}</div>
+                              </div>
+                              <div className="record-section" style={{ background: '#F3F4F6' }}>
+                                <div className="record-section-title">家長回應</div>
+                                <div className="record-section-content">{rec.response}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="empty-state">
