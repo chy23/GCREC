@@ -366,7 +366,7 @@ function App() {
                 </div>
               </div>
             ) : result ? (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', height: '70vh' }}>
                 <div className="results-header-bar">
                   <div className="results-header-left">
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, whiteSpace: 'nowrap' }}>
@@ -386,7 +386,7 @@ function App() {
                   </button>
                 </div>
                 
-                <div style={{ flex: 1, overflowY: 'auto' }}>
+                <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
                   {viewMode === 'highlight' && (
                     <div className="highlight-view">{renderHighlightedText(result)}</div>
                   )}
