@@ -112,14 +112,6 @@ const LOCAL_MODELS = [
     limitation: '其專長為邏輯運算與寫程式，處理中文摘要有時文法會比較生硬。'
   },
   { 
-    id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC', 
-    name: 'Mistral (7B)', 
-    provider: 'Mistral (法國)',
-    desc: '【歐洲開源霸主】在 7B 級別中公認表現最優異的模型之一，邏輯極度嚴謹。', 
-    hardware: '【高階設備限定】需求極高 (約需 5GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
-    limitation: '與 Gemma 2 (9B) 一樣極度吃重硬體，若配備不足會導致當機。'
-  },
-  { 
     id: 'gemma-2-9b-it-q4f16_1-MLC', 
     name: 'Gemma 2 (9B)', 
     provider: 'Google (美國)',
