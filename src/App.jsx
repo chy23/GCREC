@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter } from 'lucide-react';
+import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter, Cpu, CloudLightning } from 'lucide-react';
+import { CreateMLCEngine } from '@mlc-ai/web-llm';
 import './index.css';
 
 import CHANGELOG from './changelog.json';
@@ -63,7 +64,37 @@ function App() {
     try { return localStorage.getItem('has_seen_guide') !== 'true'; }
     catch(e) { return true; }
   });
+  const [engineMode, setEngineMode] = useState('setup'); // 'setup', 'api', 'local'
+  const [mlcEngine, setMlcEngine] = useState(null);
+  const [downloadProgress, setDownloadProgress] = useState('');
+  const [isModelLoading, setIsModelLoading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const initWebLLM = async () => {
+    setIsModelLoading(true);
+    setEngineMode('local');
+    setDownloadProgress('正在初始化引擎，請稍候...');
+    try {
+      // 使用支援度極佳、中文能力不錯且小巧的 Qwen2.5 模型
+      const engine = await CreateMLCEngine(
+        'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+        {
+          initProgressCallback: (progress) => {
+            setDownloadProgress(progress.text);
+          }
+        }
+      );
+      setMlcEngine(engine);
+      setDownloadProgress('');
+      setIsApiKeySet(true); // 設定為準備就緒
+    } catch (error) {
+      console.error(error);
+      alert("初始化本地模型失敗。您的瀏覽器可能不支援 WebGPU，或記憶體不足。請使用最新版 Chrome 或改用雲端 API 模式。\\n錯誤訊息: " + error.message);
+      setEngineMode('setup');
+    } finally {
+      setIsModelLoading(false);
+    }
+  };
 
   const closeGuide = () => {
     try { localStorage.setItem('has_seen_guide', 'true'); } catch(e) {}
@@ -133,8 +164,12 @@ function App() {
   };
 
   const processFiles = async () => {
-    if (!apiKey) {
+    if (engineMode === 'api' && !apiKey) {
       alert("請先輸入 Gemini API Key");
+      return;
+    }
+    if (engineMode === 'local' && !mlcEngine) {
+      alert("本地端模型尚未準備完成");
       return;
     }
     if (files.length === 0) {
@@ -154,49 +189,63 @@ function App() {
         combinedData += text + '\n\n';
       }
 
-      const modelsToTry = [
-        'gemini-3.7-flash',
-        'gemini-3.6-flash',
-        'gemini-3.5-flash',
-        'gemini-3.1-pro-preview'
-      ];
-
-      let generatedText = null;
-      let lastError = null;
-
-      for (const model of modelsToTry) {
+      if (engineMode === 'local') {
         try {
-          console.log(`嘗試使用模型: ${model}`);
-          const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [{ text: SYSTEM_PROMPT + combinedData }]
-                }
-              ]
-            })
+          console.log('開始本地端推理...');
+          const reply = await mlcEngine.chat.completions.create({
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: combinedData }
+            ],
+            temperature: 0.1,
           });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error?.message || `模型 ${model} 呼叫失敗`);
-          }
-
-          const data = await response.json();
-          generatedText = data.candidates[0].content.parts[0].text;
-          console.log(`模型 ${model} 成功產出結果`);
-          break; // 成功則跳出迴圈，不再嘗試下一個模型
-        } catch (error) {
-          console.warn(`模型 ${model} 失敗:`, error.message);
-          lastError = error;
-          // 繼續下一次迴圈嘗試下一個模型
+          generatedText = reply.choices[0].message.content;
+          console.log('本地端推理完成');
+        } catch (err) {
+          throw new Error("本地模型推理失敗: " + err.message);
         }
-      }
+      } else {
+        const modelsToTry = [
+          'gemini-3.7-flash',
+          'gemini-3.6-flash',
+          'gemini-3.5-flash',
+          'gemini-3.1-pro-preview'
+        ];
 
-      if (!generatedText) {
-        throw new Error(`所有模型皆嘗試失敗。最後錯誤: ${lastError.message}`);
+        for (const model of modelsToTry) {
+          try {
+            console.log(`嘗試使用模型: ${model}`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [{ text: SYSTEM_PROMPT + combinedData }]
+                  }
+                ]
+              })
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.error?.message || `模型 ${model} 呼叫失敗`);
+            }
+
+            const data = await response.json();
+            generatedText = data.candidates[0].content.parts[0].text;
+            console.log(`模型 ${model} 成功產出結果`);
+            break; // 成功則跳出迴圈，不再嘗試下一個模型
+          } catch (error) {
+            console.warn(`模型 ${model} 失敗:`, error.message);
+            lastError = error;
+            // 繼續下一次迴圈嘗試下一個模型
+          }
+        }
+
+        if (!generatedText) {
+          throw new Error(`所有模型皆嘗試失敗。最後錯誤: ${lastError.message}`);
+        }
       }
 
       setResult(generatedText);
@@ -242,12 +291,82 @@ function App() {
         {/* Left Column: Upload */}
         <div className="layout-col">
 
-        {!isApiKeySet && (
+        {engineMode === 'setup' && (
           <div className="glass-card" style={{ border: '2px solid var(--primary)' }}>
-            <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-              <Settings size={20} />
-              第一步：設定 API Key
+            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+              <Cpu size={24} />
+              選擇您的 AI 運算引擎
             </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div 
+                className="engine-option-card"
+                onClick={() => setEngineMode('api')}
+                style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'pointer', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                  <CloudLightning size={24} color="#4F46E5" />
+                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>雲端 API 模式 <span style={{ fontSize: '0.8rem', background: '#DBEAFE', color: '#1E40AF', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>推薦</span></h4>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+                  使用 Google 強大的 Gemini 伺服器進行轉換。速度極快、排版最精確，且任何舊電腦或手機皆可使用。<strong>需自備 API Key。</strong>
+                </p>
+              </div>
+
+              <div 
+                className="engine-option-card"
+                onClick={initWebLLM}
+                style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'pointer', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                  <Cpu size={24} color="#10B981" />
+                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>實驗性</span></h4>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+                  直接下載 AI 模型 (約 1GB) 到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>僅限支援 WebGPU 的新版瀏覽器，且極度消耗電腦資源。</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {engineMode === 'local' && isModelLoading && (
+          <div className="glass-card" style={{ border: '2px solid var(--secondary)', textAlign: 'center' }}>
+            <Cpu size={32} color="var(--secondary)" style={{ marginBottom: '1rem' }} />
+            <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>正在為您下載並載入本機模型...</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+              這會需要幾分鐘的時間，且取決於您的網路速度。<br/>若您的電腦沒有足夠的記憶體或未支援 WebGPU，載入可能會失敗。
+            </p>
+            <div style={{ background: '#F3F4F6', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
+              {downloadProgress}
+            </div>
+            <button 
+              className="btn btn-secondary" 
+              style={{ marginTop: '1.5rem' }}
+              onClick={() => {
+                setEngineMode('setup');
+                setIsModelLoading(false);
+              }}
+            >
+              取消並返回
+            </button>
+          </div>
+        )}
+
+        {engineMode === 'api' && !isApiKeySet && (
+          <div className="glass-card" style={{ border: '2px solid var(--primary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', margin: 0 }}>
+                <Settings size={20} />
+                第一步：設定 API Key
+              </h3>
+              <button 
+                onClick={() => setEngineMode('setup')}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.9rem', textDecoration: 'underline' }}
+              >
+                返回選擇引擎
+              </button>
+            </div>
             <p style={{ marginBottom: '1rem', color: 'var(--text-muted)' }}>
               為了讓 AI 替您產出紀錄，請先輸入您的 Gemini API Key。設定完成後此欄位將會自動隱藏，未來可至右上角「設定」中修改。
             </p>
@@ -276,6 +395,7 @@ function App() {
           </div>
         )}
 
+        {isApiKeySet && !isModelLoading && (
         <div className="glass-card">
         <div className="form-group">
           <label>上傳對話紀錄 (支援 CSV 或 TXT)</label>
@@ -336,8 +456,8 @@ function App() {
             )}
           </button>
         </div>
-      </div>
-
+        </div>
+        )}
         </div>
 
         {/* Right Column: Results / Skeleton / Empty State */}
