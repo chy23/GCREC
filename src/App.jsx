@@ -482,8 +482,10 @@ function App() {
                   <CloudLightning size={24} color="#4F46E5" />
                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>雲端 API 模式 <span style={{ fontSize: '0.8rem', background: '#DBEAFE', color: '#1E40AF', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>推薦</span></h4>
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
                   使用 Google 強大的 Gemini 伺服器進行轉換。速度極快、排版最精確，且任何舊電腦或手機皆可使用。<strong>需自備 API Key。</strong>
+                  <br/>
+                  <span style={{color: '#4F46E5', fontWeight: 600}}>📊 處理容量：</span>最高支援單次上傳 100 萬字以上 (適合極大量且需瞬間完成的任務)
                 </p>
               </div>
 
@@ -522,6 +524,8 @@ function App() {
 
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '1rem 0 0 0', lineHeight: 1.5 }}>
                   直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong>
+                  <br/>
+                  <span style={{color: '#059669', fontWeight: 600}}>📊 處理容量：</span>採用自動分批處理技術，總資料量<strong>無上限</strong>，無論幾千筆對話都能完全消化 (資料越多僅影響等待時間)。
                 </p>
               </div>
             </div>
