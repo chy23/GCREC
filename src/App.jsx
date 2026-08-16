@@ -72,6 +72,14 @@ const LOCAL_MODELS = [
     limitation: '模型腦容量較小，若面對極度複雜的邏輯推演可能會產生幻覺。'
   },
   { 
+    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', 
+    name: 'Llama 3.2 (3B)', 
+    provider: 'Meta (美國)',
+    desc: '【進階】效能與準確度的甜蜜點，邏輯推理能力大幅超越 1B 模型，減少幻覺發生。', 
+    hardware: '需求中等 (約需 2.5GB 記憶體)，建議使用三年內新購之中高階筆電。',
+    limitation: '處理速度會比 1B 模型稍微慢一些。'
+  },
+  { 
     id: 'gemma3-1b-it-q4f16_1-MLC', 
     name: 'Gemma 3 (1B)', 
     provider: 'Google (美國)',
@@ -86,6 +94,14 @@ const LOCAL_MODELS = [
     desc: '輕量平衡，在輕巧體積與對話理解能力間取得絕佳平衡。', 
     hardware: '需求中等 (約需 1.5GB 記憶體)，建議使用三年內新購之筆電。',
     limitation: '若處理極長對話紀錄時，可能會有理解疲勞或跳過部分細節的狀況。'
+  },
+  { 
+    id: 'gemma-2-9b-it-q4f16_1-MLC', 
+    name: 'Gemma 2 (9B)', 
+    provider: 'Google (美國)',
+    desc: '【超大腦容量】極致聰明，擁有最高等級的中文理解與精確判斷能力。', 
+    hardware: '【高階設備限定】需求極高 (約需 6GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
+    limitation: '若硬體不達標，瀏覽器會直接崩潰當機；且處理速度較慢。'
   }
 ];
 
