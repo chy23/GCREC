@@ -103,10 +103,20 @@ function App() {
     };
 
     try {
+      // 強制讓出主執行緒，確保 React 能夠將步驟 1 渲染到畫面上，避免畫面因後續解析凍結
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      if (!navigator.gpu) {
+        throw new Error("您的瀏覽器或硬體不支援 WebGPU。請改用「雲端 API 模式」或更換最新版 Chrome 瀏覽器。");
+      }
+
       // 1. 動態載入 WebLLM 引擎 (約 6MB)
       const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
       
       setDownloadProgress('步驟 2/3: 執行環境載入完成！正在向系統申請 WebGPU 運算資源...');
+
+      // 再次讓出主執行緒，確保步驟 2 渲染成功，再進入極度耗費資源的 CreateMLCEngine
+      await new Promise(resolve => setTimeout(resolve, 150));
 
       // 2. 申請資源並開始載入/下載模型 weights (約 1.5GB)
       // 改用 Google 推出的 Gemma 2 (2B) 模型
