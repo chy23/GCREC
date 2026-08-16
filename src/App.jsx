@@ -54,6 +54,7 @@ function App() {
   const [isApiKeySet, setIsApiKeySet] = useState(false);
   const [files, setFiles] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [chunkProgress, setChunkProgress] = useState('');
   const [result, setResult] = useState('');
   const [viewMode, setViewMode] = useState('highlight');
   const [copied, setCopied] = useState(false);
@@ -178,6 +179,7 @@ function App() {
     }
 
     setIsProcessing(true);
+    setChunkProgress('');
     setResult('');
 
     try {
@@ -192,14 +194,31 @@ function App() {
       if (engineMode === 'local') {
         try {
           console.log('開始本地端推理...');
-          const reply = await mlcEngine.chat.completions.create({
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: combinedData }
-            ],
-            temperature: 0.1,
-          });
-          generatedText = reply.choices[0].message.content;
+          
+          // 本地模型 Context Window 有限 (通常 4096)，必須將巨量文本分塊 (Chunking)
+          const lines = combinedData.split('\n');
+          const maxLinesPerChunk = 150; // 每次處理約 150 行對話，避免超過 Token 限制
+          const chunks = [];
+          for (let i = 0; i < lines.length; i += maxLinesPerChunk) {
+            chunks.push(lines.slice(i, i + maxLinesPerChunk).join('\n'));
+          }
+          
+          let fullResult = "";
+          for (let i = 0; i < chunks.length; i++) {
+            setChunkProgress(`處理進度: ${i+1} / ${chunks.length}`);
+            console.log(`處理本地區塊 ${i+1}/${chunks.length}`);
+            
+            const reply = await mlcEngine.chat.completions.create({
+              messages: [
+                { role: "system", content: SYSTEM_PROMPT },
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄，請依照系統提示進行轉換：\n\n` + chunks[i] }
+              ],
+              temperature: 0.1,
+            });
+            fullResult += reply.choices[0].message.content + "\n\n";
+          }
+          
+          generatedText = fullResult;
           console.log('本地端推理完成');
         } catch (err) {
           throw new Error("本地模型推理失敗: " + err.message);
@@ -447,10 +466,13 @@ function App() {
         <div style={{ marginTop: '2rem', textAlign: 'center' }}>
           <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0}>
             {isProcessing ? (
-              <>
-                <div className="loader"></div>
-                處理中...
-              </>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div className="loader"></div>
+                  處理中...
+                </div>
+                {chunkProgress && <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>{chunkProgress}</div>}
+              </div>
             ) : (
               '開始轉換紀錄'
             )}
