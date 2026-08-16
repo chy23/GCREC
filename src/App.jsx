@@ -63,9 +63,30 @@ const getSystemPrompt = (startDate, endDate) => {
 };
 
 const LOCAL_MODELS = [
-  { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', name: 'Llama 3.2 (1B)', desc: '【推薦】極度輕量 (約需 1GB 記憶體)，速度最快且非常聽話，適合一般文書筆電。', provider: 'Meta (美國)' },
-  { id: 'gemma3-1b-it-q4f16_1-MLC', name: 'Gemma 3 (1B)', desc: '【最新】極度輕量 (約需 1GB 記憶體)，Google 最新第三代微型模型，理解能力極佳。', provider: 'Google (美國)' },
-  { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Gemma 2 (2B)', desc: '輕量平衡 (約需 1.5GB 記憶體)，對話理解能力不錯。', provider: 'Google (美國)' }
+  { 
+    id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 
+    name: 'Llama 3.2 (1B)', 
+    provider: 'Meta (美國)',
+    desc: '【推薦】極度輕量，速度最快且指令服從性極高，適合各種文書處理與資料整理任務。', 
+    hardware: '需求極低 (約需 1GB 記憶體)，無獨立顯卡的一般文書筆電皆可順暢執行。',
+    limitation: '模型腦容量較小，若面對極度複雜的邏輯推演可能會產生幻覺。'
+  },
+  { 
+    id: 'gemma3-1b-it-q4f16_1-MLC', 
+    name: 'Gemma 3 (1B)', 
+    provider: 'Google (美國)',
+    desc: '【最新】極度輕量，Google 最新第三代微型模型，理解能力極佳。', 
+    hardware: '需求極低 (約需 1GB 記憶體)，無獨立顯卡的一般文書筆電皆可順暢執行。',
+    limitation: '為最新發佈之模型，部分排版格式的穩定性尚待驗證。'
+  },
+  { 
+    id: 'gemma-2-2b-it-q4f16_1-MLC', 
+    name: 'Gemma 2 (2B)', 
+    provider: 'Google (美國)',
+    desc: '輕量平衡，在輕巧體積與對話理解能力間取得絕佳平衡。', 
+    hardware: '需求中等 (約需 1.5GB 記憶體)，建議使用三年內新購之筆電。',
+    limitation: '若處理極長對話紀錄時，可能會有理解疲勞或跳過部分細節的狀況。'
+  }
 ];
 
 function App() {
@@ -508,9 +529,11 @@ function App() {
                       <option key={m.id} value={m.id}>{m.name} - {m.provider}</option>
                     ))}
                   </select>
-                  <p style={{ color: '#059669', fontSize: '0.85rem', marginTop: '0.5rem', background: '#ECFDF5', padding: '0.5rem', borderRadius: '6px' }}>
-                    {LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.desc}
-                  </p>
+                  <div style={{ fontSize: '0.85rem', marginTop: '0.5rem', background: '#ECFDF5', padding: '0.75rem', borderRadius: '6px', lineHeight: 1.6 }}>
+                    <div style={{ color: '#059669', marginBottom: '0.2rem' }}><strong>💡 模型特色：</strong>{LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.desc}</div>
+                    <div style={{ color: '#047857', marginBottom: '0.2rem' }}><strong>💻 建議硬體：</strong>{LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.hardware}</div>
+                    <div style={{ color: '#B45309' }}><strong>⚠️ 使用限制：</strong>{LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.limitation}</div>
+                  </div>
                 </div>
 
                 <button 
