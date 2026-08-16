@@ -216,13 +216,43 @@ function App() {
         try {
           console.log('開始本地端推理...');
           
-          // 本地模型 Context Window 有限 (預設 4096)，必須將巨量文本切得更碎
-          // 加上 System Prompt 的長度，每次處理的對話行數需要再下修
-          const lines = combinedData.split('\n');
-          const maxLinesPerChunk = 40; // 將原本的 150 降低為 40 行，確保不超過 4000 token 限制
+          // 本地模型 Context Window 有限 (預設 4096/8192)，必須將巨量文本切得更碎
+          // 為了避免單一則「多行訊息」(包含換行符號) 被中斷，我們需使用 PapaParse 正確解析並按「真實列數」切塊
           const chunks = [];
-          for (let i = 0; i < lines.length; i += maxLinesPerChunk) {
-            chunks.push(lines.slice(i, i + maxLinesPerChunk).join('\n'));
+          for (const file of files) {
+            const text = await file.text();
+            if (file.name.toLowerCase().endsWith('.csv')) {
+              const parsed = Papa.parse(text, { header: false });
+              const rows = parsed.data;
+              let currentChunk = `--- 檔案：${file.name} ---\n`;
+              let rowCount = 0;
+              for (const row of rows) {
+                // 將陣列轉回單行 CSV 字串，確保內部換行不會被截斷
+                const rowStr = Papa.unparse([row], { header: false });
+                currentChunk += rowStr + '\n';
+                rowCount++;
+                if (rowCount >= 40) {
+                  chunks.push(currentChunk);
+                  currentChunk = `--- 檔案：${file.name} (續) ---\n`;
+                  rowCount = 0;
+                }
+              }
+              if (rowCount > 0 && currentChunk.trim() !== `--- 檔案：${file.name} (續) ---`) {
+                chunks.push(currentChunk);
+              }
+            } else {
+              // TXT 檔案直接按行切
+              const lines = text.split('\n');
+              let currentChunk = `--- 檔案：${file.name} ---\n`;
+              for (let i = 0; i < lines.length; i++) {
+                currentChunk += lines[i] + '\n';
+                if ((i + 1) % 40 === 0) {
+                  chunks.push(currentChunk);
+                  currentChunk = `--- 檔案：${file.name} (續) ---\n`;
+                }
+              }
+              if (lines.length % 40 !== 0) chunks.push(currentChunk);
+            }
           }
           
           let fullResult = "";
@@ -233,7 +263,7 @@ function App() {
             const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄，請依照系統提示進行轉換：\n\n` + chunks[i] }
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄，請依照系統提示擷取重點事件（若此片段無重要輔導事件，請完全不要輸出任何文字，保持空白即可）：\n\n` + chunks[i] }
               ],
               temperature: 0.1,
               stream: true, // 開啟串流模式
