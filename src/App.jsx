@@ -321,7 +321,7 @@ function App() {
                   currentChunk += rowStr + '\n';
                 }
 
-                if (currentChunk.length >= 1200) {
+                if (currentChunk.length >= 600) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
@@ -337,7 +337,7 @@ function App() {
                 if (lines[i].trim() && isDateInRange(lines[i])) {
                   currentChunk += lines[i].trim() + '\n';
                 }
-                if (currentChunk.length >= 1200) {
+                if (currentChunk.length >= 600) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
