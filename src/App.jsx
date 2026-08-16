@@ -5,10 +5,20 @@ import './index.css';
 
 import CHANGELOG from './changelog.json';
 
-const SYSTEM_PROMPT = `你是一位心思細密、教學態度嚴謹、行政紀錄極具專業感的國小班導師。你的任務是將使用者提供的家長與老師對話紀錄（例如通訊軟體匯出的 CSV 檔案或聊天文字）進行重點節錄，轉化為客觀、標準化的「親師訪談紀錄表」。
+const getSystemPrompt = (startDate, endDate) => {
+  let dateRule = '預設截取全部對話資訊。';
+  if (startDate && endDate) {
+    dateRule = `請嚴格僅截取介於 **${startDate} 至 ${endDate}** 之間的對話事件。若對話日期不在這個範圍內，請直接忽略，不要列入紀錄。`;
+  } else if (startDate) {
+    dateRule = `請嚴格僅截取 **${startDate} 之後** 的對話事件。若對話日期早於這個範圍，請直接忽略。`;
+  } else if (endDate) {
+    dateRule = `請嚴格僅截取 **${endDate} 之前** 的對話事件。若對話日期晚於這個範圍，請直接忽略。`;
+  }
+
+  return `你是一位心思細密、教學態度嚴謹、行政紀錄極具專業感的國小班導師。你的任務是將使用者提供的家長與老師對話紀錄（例如通訊軟體匯出的 CSV 檔案或聊天文字）進行重點節錄，轉化為客觀、標準化的「親師訪談紀錄表」。
 
 # 核心工作原則
-1. **日期篩選**：預設僅截取從 **2026/02/20 之後** 的對話資訊（除非使用者有特別指定其他時間）。
+1. **日期篩選**：${dateRule}
 2. **輔導內容要點**：請根據該次溝通的核心主題，精煉出一句清晰的摘要作為「標題」。
 3. **聯絡事項 -【事件紀錄】（極重要）**：
    - 僅能截取教師客觀陳述的學生具體表現、校內行為、課堂反應、態度或語氣。
@@ -47,6 +57,7 @@ const SYSTEM_PROMPT = `你是一位心思細密、教學態度嚴謹、行政紀
 - 遇有資訊不具體或模糊之處，請引導使用者補充，切勿自行推論。
 
 以下為對話紀錄：\n`;
+};
 
 function App() {
   const [apiKey, setApiKey] = useState('');
@@ -58,6 +69,9 @@ function App() {
   const [viewMode, setViewMode] = useState('highlight');
   const [copied, setCopied] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const fileInputRef = useRef(null);
   const [showChangelog, setShowChangelog] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
@@ -68,7 +82,6 @@ function App() {
   const [mlcEngine, setMlcEngine] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
-  const fileInputRef = useRef(null);
 
   const initWebLLM = async () => {
     setIsModelLoading(true);
@@ -218,14 +231,42 @@ function App() {
     try {
       let combinedData = '';
       
+      const isDateInRange = (dateStr) => {
+        if (!startDate && !endDate) return true;
+        const match = dateStr.match(/\d{4}[\/\-]\d{2}[\/\-]\d{2}/);
+        if (!match) return true; // 若該行沒有明確日期 (可能是多行訊息的延續)，預設保留
+        
+        const d = new Date(match[0].replace(/-/g, '/'));
+        if (isNaN(d.getTime())) return true;
+        
+        if (startDate) {
+          const sd = new Date(startDate);
+          if (d < sd) return false;
+        }
+        if (endDate) {
+          const ed = new Date(endDate);
+          ed.setHours(23, 59, 59, 999);
+          if (d > ed) return false;
+        }
+        return true;
+      };
+
       for (const file of files) {
         combinedData += `--- 檔案：${file.name} ---\n`;
         const text = await file.text();
-        combinedData += text + '\n\n';
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (isDateInRange(line)) {
+            combinedData += line + '\n';
+          }
+        }
+        combinedData += '\n\n';
       }
 
       let generatedText = null;
       let lastError = null;
+
+      const dynamicSystemPrompt = getSystemPrompt(startDate, endDate);
 
       if (engineMode === 'local') {
         try {
@@ -242,6 +283,10 @@ function App() {
               let currentChunk = `--- 檔案：${file.name} ---\n`;
               let rowCount = 0;
               for (const row of rows) {
+                // 先過濾日期
+                const rawRowStr = row.join(' ');
+                if (!isDateInRange(rawRowStr)) continue;
+
                 // 將 CSV 陣列轉為人類易讀的對話劇本格式，降低小模型理解負擔
                 let rowStr = '';
                 const cleanRow = row.filter(cell => cell !== undefined && cell !== null && cell.trim() !== '');
@@ -273,7 +318,7 @@ function App() {
               const lines = text.split('\n');
               let currentChunk = `--- 檔案：${file.name} ---\n`;
               for (let i = 0; i < lines.length; i++) {
-                if (lines[i].trim()) {
+                if (lines[i].trim() && isDateInRange(lines[i])) {
                   currentChunk += lines[i].trim() + '\n';
                 }
                 if ((i + 1) % 100 === 0) {
@@ -292,7 +337,7 @@ function App() {
             
             const stream = await mlcEngine.chat.completions.create({
               messages: [
-                { role: "system", content: SYSTEM_PROMPT },
+                { role: "system", content: dynamicSystemPrompt },
                 { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。
 
 【必備輸出格式範例】（請完全照抄此結構填寫，絕對不可遺漏「家長回應」等任何欄位）：
@@ -346,7 +391,7 @@ function App() {
               body: JSON.stringify({
                 contents: [
                   {
-                    parts: [{ text: SYSTEM_PROMPT + combinedData }]
+                    parts: [{ text: dynamicSystemPrompt + combinedData }]
                   }
                 ]
               })
@@ -522,6 +567,21 @@ function App() {
 
         {isApiKeySet && !isModelLoading && (
         <div className="glass-card">
+          <div className="form-group" style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #E5E7EB' }}>
+            <label>篩選對話日期 (選填)</label>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>若只設定開始或結束日期，將自動過濾；若皆留空則處理所有資料。</p>
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: '150px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>開始日期</span>
+                <input type="date" className="input-field" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div style={{ flex: 1, minWidth: '150px' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>結束日期</span>
+                <input type="date" className="input-field" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
         <div className="form-group">
           <label>上傳對話紀錄 (支援 CSV 或 TXT)</label>
           <div 
