@@ -64,8 +64,7 @@ const getSystemPrompt = (startDate, endDate) => {
 
 const LOCAL_MODELS = [
   { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', name: 'Llama 3.2 (1B)', desc: '【推薦】極度輕量 (約需 1GB 記憶體)，速度最快且非常聽話，適合一般文書筆電。', provider: 'Meta (美國)' },
-  { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Gemma 2 (2B)', desc: '輕量平衡 (約需 1.5GB 記憶體)，對話理解能力不錯。', provider: 'Google (美國)' },
-  { id: 'Phi-3.5-mini-instruct-q4f16_1-MLC', name: 'Phi 3.5 (3.8B)', desc: '效能吃重 (約需 2.5GB 記憶體)，邏輯能力最強，但可能導致舊筆電當機。', provider: 'Microsoft (美國)' }
+  { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Gemma 2 (2B)', desc: '輕量平衡 (約需 1.5GB 記憶體)，對話理解能力不錯。', provider: 'Google (美國)' }
 ];
 
 function App() {
@@ -711,7 +710,7 @@ function App() {
                 </div>
               </div>
             ) : result ? (
-              <div style={{ display: 'flex', flexDirection: 'column', height: '70vh' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: '500px', height: 'calc(100vh - 120px)' }}>
                 <div className="results-header-bar">
                   <div className="results-header-left">
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, whiteSpace: 'nowrap' }}>
