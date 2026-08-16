@@ -64,28 +64,20 @@ const getSystemPrompt = (startDate, endDate) => {
 
 const LOCAL_MODELS = [
   { 
-    id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 
-    name: 'Llama 3.2 (1B)', 
-    provider: 'Meta (美國)',
-    desc: '【推薦】極度輕量，速度最快且指令服從性極高，適合各種文書處理與資料整理任務。', 
-    hardware: '需求極低 (約需 1GB 記憶體)，無獨立顯卡的一般文書筆電皆可順暢執行。',
-    limitation: '模型腦容量較小，若面對極度複雜的邏輯推演可能會產生幻覺。'
-  },
-  { 
-    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', 
-    name: 'Llama 3.2 (3B)', 
-    provider: 'Meta (美國)',
-    desc: '【進階】效能與準確度的甜蜜點，邏輯推理能力大幅超越 1B 模型，減少幻覺發生。', 
-    hardware: '需求中等 (約需 2.5GB 記憶體)，建議使用三年內新購之中高階筆電。',
-    limitation: '處理速度會比 1B 模型稍微慢一些。'
-  },
-  { 
     id: 'gemma3-1b-it-q4f16_1-MLC', 
     name: 'Gemma 3 (1B)', 
     provider: 'Google (美國)',
     desc: '【最新】極度輕量，Google 最新第三代微型模型，理解能力極佳。', 
     hardware: '需求極低 (約需 1GB 記憶體)，無獨立顯卡的一般文書筆電皆可順暢執行。',
     limitation: '為最新發佈之模型，部分排版格式的穩定性尚待驗證。'
+  },
+  { 
+    id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', 
+    name: 'Llama 3.2 (1B)', 
+    provider: 'Meta (美國)',
+    desc: '【推薦】極度輕量，速度最快且指令服從性極高，適合各種文書處理與資料整理任務。', 
+    hardware: '需求極低 (約需 1GB 記憶體)，無獨立顯卡的一般文書筆電皆可順暢執行。',
+    limitation: '模型腦容量較小，若面對極度複雜的邏輯推演可能會產生幻覺。'
   },
   { 
     id: 'gemma-2-2b-it-q4f16_1-MLC', 
@@ -96,20 +88,12 @@ const LOCAL_MODELS = [
     limitation: '若處理極長對話紀錄時，可能會有理解疲勞或跳過部分細節的狀況。'
   },
   { 
-    id: 'gemma-2-9b-it-q4f16_1-MLC', 
-    name: 'Gemma 2 (9B)', 
-    provider: 'Google (美國)',
-    desc: '【超大腦容量】極致聰明，擁有最高等級的中文理解與精確判斷能力。', 
-    hardware: '【高階設備限定】需求極高 (約需 6GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
-    limitation: '若硬體不達標，瀏覽器會直接崩潰當機；且處理速度較慢。'
-  },
-  { 
-    id: 'Phi-4-mini-instruct-q4f16_1-MLC', 
-    name: 'Phi-4 Mini (3.8B)', 
-    provider: '微軟 (美國)',
-    desc: '【理科腦】微軟最新推出的數學與邏輯特化模型，改善了上一代亂碼的缺點。', 
-    hardware: '需求偏高 (約需 3GB 記憶體)，建議具備 16GB 以上記憶體的筆電。',
-    limitation: '其專長為邏輯運算與寫程式，處理中文摘要有時文法會比較生硬。'
+    id: 'Llama-3.2-3B-Instruct-q4f16_1-MLC', 
+    name: 'Llama 3.2 (3B)', 
+    provider: 'Meta (美國)',
+    desc: '【進階】效能與準確度的甜蜜點，邏輯推理能力大幅超越 1B 模型，減少幻覺發生。', 
+    hardware: '需求中等 (約需 2.5GB 記憶體)，建議使用三年內新購之中高階筆電。',
+    limitation: '處理速度會比 1B 模型稍微慢一些。'
   },
   { 
     id: 'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC', 
@@ -120,12 +104,28 @@ const LOCAL_MODELS = [
     limitation: '偶爾會夾雜一些非繁體中文的詞彙或語氣。'
   },
   { 
+    id: 'Phi-4-mini-instruct-q4f16_1-MLC', 
+    name: 'Phi-4 Mini (3.8B)', 
+    provider: '微軟 (美國)',
+    desc: '【理科腦】微軟最新推出的數學與邏輯特化模型，改善了上一代亂碼的缺點。', 
+    hardware: '需求偏高 (約需 3GB 記憶體)，建議具備 16GB 以上記憶體的筆電。',
+    limitation: '其專長為邏輯運算與寫程式，處理中文摘要有時文法會比較生硬。'
+  },
+  { 
     id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC', 
     name: 'Mistral (7B)', 
     provider: 'Mistral (法國)',
     desc: '【歐洲開源霸主】在 7B 級別中公認表現最優異的模型之一，邏輯極度嚴謹。', 
     hardware: '【高階設備限定】需求極高 (約需 5GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
     limitation: '與 Gemma 2 (9B) 一樣極度吃重硬體，若配備不足會導致當機。'
+  },
+  { 
+    id: 'gemma-2-9b-it-q4f16_1-MLC', 
+    name: 'Gemma 2 (9B)', 
+    provider: 'Google (美國)',
+    desc: '【超大腦容量】極致聰明，擁有最高等級的中文理解與精確判斷能力。', 
+    hardware: '【高階設備限定】需求極高 (約需 6GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
+    limitation: '若硬體不達標，瀏覽器會直接崩潰當機；且處理速度較慢。'
   }
 ];
 
