@@ -300,7 +300,6 @@ function App() {
               const parsed = Papa.parse(text, { header: false });
               const rows = parsed.data;
               let currentChunk = `--- 檔案：${file.name} ---\n`;
-              let rowCount = 0;
               for (const row of rows) {
                 // 先過濾日期
                 const rawRowStr = row.join(' ');
@@ -320,16 +319,14 @@ function App() {
                 
                 if (rowStr.trim()) {
                   currentChunk += rowStr + '\n';
-                  rowCount++;
                 }
 
-                if (rowCount >= 50) {
+                if (currentChunk.length >= 1200) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
-                  rowCount = 0;
                 }
               }
-              if (rowCount > 0 && currentChunk.trim() !== `--- 檔案：${file.name} (續) ---`) {
+              if (currentChunk.trim() !== `--- 檔案：${file.name} (續) ---` && currentChunk.trim() !== `--- 檔案：${file.name} ---`) {
                 chunks.push(currentChunk);
               }
             } else {
@@ -340,12 +337,14 @@ function App() {
                 if (lines[i].trim() && isDateInRange(lines[i])) {
                   currentChunk += lines[i].trim() + '\n';
                 }
-                if ((i + 1) % 50 === 0) {
+                if (currentChunk.length >= 1200) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
               }
-              if (lines.length % 50 !== 0) chunks.push(currentChunk);
+              if (currentChunk.trim() !== `--- 檔案：${file.name} (續) ---` && currentChunk.trim() !== `--- 檔案：${file.name} ---`) {
+                chunks.push(currentChunk);
+              }
             }
           }
           
