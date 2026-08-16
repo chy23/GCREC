@@ -338,22 +338,7 @@ function App() {
             const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: dynamicSystemPrompt },
-                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。
-
-【必備輸出格式範例】（請完全照抄此結構填寫，絕對不可遺漏「家長回應」等任何欄位）：
-紀錄 X
-訪談方式：通訊軟體
-訪談對象：XXX家長
-訪談日期：YYYY/MM/DD
-輔導內容要點：(一句話總結)
-聯絡事項：
-　事件紀錄：(客觀陳述具體事件)
-　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)
-
-【重要過濾規則】：
-若對話中只有單純的「早安」、「謝謝」、「照片已傳送」或純請假，這不算輔導事件，請你「直接回覆空白」，絕對不要輸出任何紀錄！
-
-對話紀錄如下：\n\n` + chunks[i] }
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄：\n\n${chunks[i]}\n\n==========\n【極度重要】請嚴格依據上述對話紀錄，完全照抄以下結構填寫，絕對不可遺漏「家長回應」等任何欄位，且請維持乾淨的純文字，不要加上【】或 Markdown 星號等符號：\n\n紀錄 X\n訪談方式：通訊軟體\n訪談對象：XXX家長\n訪談日期：YYYY/MM/DD\n輔導內容要點：(一句話總結)\n聯絡事項：\n　事件紀錄：(客觀陳述具體事件)\n　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)\n\n【重要過濾規則】：\n若對話中只有單純的「早安」、「謝謝」、「照片已傳送」或純請假，這不算輔導事件，請你「直接回覆空白」，絕對不要輸出任何紀錄！` }
               ],
               temperature: 0.1,
               stream: true, // 開啟串流模式
@@ -391,7 +376,7 @@ function App() {
               body: JSON.stringify({
                 contents: [
                   {
-                    parts: [{ text: dynamicSystemPrompt + combinedData }]
+                    parts: [{ text: `${dynamicSystemPrompt}\n\n對話紀錄如下：\n\n${combinedData}\n\n==========\n【極度重要】請嚴格依據上述對話紀錄，完全照抄指定的欄位結構填寫，絕對不可遺漏任何欄位，且不要擅自加上【】等括號符號。若某段對話只是單純的早安或謝謝，請直接忽略不要記錄。` }]
                   }
                 ]
               })
