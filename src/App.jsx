@@ -139,7 +139,7 @@ function App() {
       if (!text) return '';
       let zh = text;
       zh = zh.replace(/Loading model from cache/g, '從瀏覽器快取載入模型');
-      zh = zh.replace(/Fetching param cache/g, '步驟 3/3: 正在下載 AI 模型權重 (約 1.5GB ~ 2GB，初次下載需數分鐘)');
+      zh = zh.replace(/Fetching param cache/g, '步驟 3/3: 正在下載 AI 模型權重 (檔案大小依所選模型而定，初次下載需數分鐘)');
       zh = zh.replace(/loaded\./g, '已載入。');
       zh = zh.replace(/fetched\./g, '已下載。');
       zh = zh.replace(/completed,/g, '完成，耗時');
