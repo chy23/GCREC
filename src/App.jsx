@@ -259,7 +259,7 @@ function App() {
                   rowCount++;
                 }
 
-                if (rowCount >= 40) {
+                if (rowCount >= 100) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                   rowCount = 0;
@@ -276,12 +276,12 @@ function App() {
                 if (lines[i].trim()) {
                   currentChunk += lines[i].trim() + '\n';
                 }
-                if ((i + 1) % 40 === 0) {
+                if ((i + 1) % 100 === 0) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
               }
-              if (lines.length % 40 !== 0) chunks.push(currentChunk);
+              if (lines.length % 100 !== 0) chunks.push(currentChunk);
             }
           }
           
@@ -293,7 +293,22 @@ function App() {
             const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。請「嚴格」依照 SYSTEM PROMPT 規定的格式輸出（包含「紀錄 X」、「訪談方式」、「訪談對象」、「訪談日期」、「輔導內容要點」、「聯絡事項」等欄位）。\n\n【極度重要警告】：\n1. 絕對不要輸出「以下是重點事件...」等開場白。\n2. 你的任務是記錄「學生輔導事件」。如果這段紀錄裡面只有單純的「老師早安」、「謝謝老師」、「貼圖」、或請假等毫無實質輔導意義的閒聊，請你【直接回覆空白】，絕對不要硬湊字數！\n3. 事件紀錄必須是「具體對話內容」，絕對不能只貼上發言人名稱與時間。\n\n對話紀錄如下：\n\n` + chunks[i] }
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。
+
+【必備輸出格式範例】（請完全照抄此結構填寫，絕對不可遺漏「家長回應」等任何欄位）：
+紀錄 X
+訪談方式：通訊軟體
+訪談對象：XXX家長
+訪談日期：YYYY/MM/DD
+輔導內容要點：(一句話總結)
+聯絡事項：
+　事件紀錄：(客觀陳述具體事件)
+　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)
+
+【重要過濾規則】：
+若對話中只有單純的「早安」、「謝謝」、「照片已傳送」或純請假，這不算輔導事件，請你「直接回覆空白」，絕對不要輸出任何紀錄！
+
+對話紀錄如下：\n\n` + chunks[i] }
               ],
               temperature: 0.1,
               stream: true, // 開啟串流模式
