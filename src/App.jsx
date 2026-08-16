@@ -62,6 +62,12 @@ const getSystemPrompt = (startDate, endDate) => {
 以下為對話紀錄：\n`;
 };
 
+const LOCAL_MODELS = [
+  { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', name: 'Llama 3.2 (1B)', desc: '【推薦】極度輕量 (約需 1GB 記憶體)，速度最快且非常聽話，適合一般文書筆電。', provider: 'Meta (美國)' },
+  { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Gemma 2 (2B)', desc: '輕量平衡 (約需 1.5GB 記憶體)，對話理解能力不錯。', provider: 'Google (美國)' },
+  { id: 'Phi-3.5-mini-instruct-q4f16_1-MLC', name: 'Phi 3.5 (3.8B)', desc: '效能吃重 (約需 2.5GB 記憶體)，邏輯能力最強，但可能導致舊筆電當機。', provider: 'Microsoft (美國)' }
+];
+
 function App() {
   const [apiKey, setApiKey] = useState('');
   const [isApiKeySet, setIsApiKeySet] = useState(false);
@@ -85,6 +91,7 @@ function App() {
   const [mlcEngine, setMlcEngine] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
+  const [selectedLocalModel, setSelectedLocalModel] = useState(LOCAL_MODELS[0].id);
 
   const initWebLLM = async () => {
     setIsModelLoading(true);
@@ -121,10 +128,9 @@ function App() {
       // 再次讓出主執行緒，確保步驟 2 渲染成功，再進入極度耗費資源的 CreateMLCEngine
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      // 2. 申請資源並開始載入/下載模型 weights (約 1.5GB)
-      // 改用 Google 推出的 Gemma 2 (2B) 模型
+      // 2. 申請資源並開始載入/下載模型 weights
       const engine = await CreateMLCEngine(
-        'gemma-2-2b-it-q4f16_1-MLC',
+        selectedLocalModel,
         {
           initProgressCallback: (progress) => {
             // WebLLM 會回傳進度字串，包含下載 % 數等
@@ -483,15 +489,39 @@ function App() {
 
               <div 
                 className="engine-option-card"
-                onClick={initWebLLM}
-                style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'pointer', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
+                style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'default', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                   <Cpu size={24} color="#10B981" />
                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>實驗性</span></h4>
                 </div>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
-                  直接下載 AI 模型 (約 1.5GB) 到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong>
+                
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>選擇要下載的開源模型 (免安裝)：</label>
+                  <select 
+                    value={selectedLocalModel} 
+                    onChange={(e) => setSelectedLocalModel(e.target.value)}
+                    style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '0.95rem' }}
+                  >
+                    {LOCAL_MODELS.map(m => (
+                      <option key={m.id} value={m.id}>{m.name} - {m.provider}</option>
+                    ))}
+                  </select>
+                  <p style={{ color: '#059669', fontSize: '0.85rem', marginTop: '0.5rem', background: '#ECFDF5', padding: '0.5rem', borderRadius: '6px' }}>
+                    {LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.desc}
+                  </p>
+                </div>
+
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={initWebLLM}
+                  style={{ width: '100%', background: '#10B981', color: 'white', border: 'none' }}
+                >
+                  開始下載並啟動 {LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.name}
+                </button>
+
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '1rem 0 0 0', lineHeight: 1.5 }}>
+                  直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong>
                 </p>
               </div>
             </div>
