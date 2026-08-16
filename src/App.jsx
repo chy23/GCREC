@@ -102,6 +102,22 @@ const LOCAL_MODELS = [
     desc: '【超大腦容量】極致聰明，擁有最高等級的中文理解與精確判斷能力。', 
     hardware: '【高階設備限定】需求極高 (約需 6GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
     limitation: '若硬體不達標，瀏覽器會直接崩潰當機；且處理速度較慢。'
+  },
+  { 
+    id: 'Phi-4-mini-instruct-q4f16_1-MLC', 
+    name: 'Phi-4 Mini (3.8B)', 
+    provider: '微軟 (美國)',
+    desc: '【理科腦】微軟最新推出的數學與邏輯特化模型，改善了上一代亂碼的缺點。', 
+    hardware: '需求偏高 (約需 3GB 記憶體)，建議具備 16GB 以上記憶體的筆電。',
+    limitation: '其專長為邏輯運算與寫程式，處理中文摘要有時文法會比較生硬。'
+  },
+  { 
+    id: 'Ministral-3-3B-Instruct-2512-BF16-q4f16_1-MLC', 
+    name: 'Ministral 3B', 
+    provider: 'Mistral (法國)',
+    desc: '【歐洲新星】來自法國的頂尖語言模型，反應靈敏且多國語言適應力強。', 
+    hardware: '需求中等 (約需 2.5GB 記憶體)，建議使用三年內新購之中高階筆電。',
+    limitation: '偶爾會夾雜一些非繁體中文的詞彙或語氣。'
   }
 ];
 
