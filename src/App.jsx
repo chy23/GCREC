@@ -75,13 +75,28 @@ function App() {
     setIsModelLoading(true);
     setEngineMode('local');
     setDownloadProgress('正在初始化引擎，請稍候...');
+
+    const translateProgress = (text) => {
+      if (!text) return '';
+      let zh = text;
+      zh = zh.replace(/Loading model from cache/g, '從快取載入模型');
+      zh = zh.replace(/Fetching param cache/g, '正在下載模型');
+      zh = zh.replace(/loaded\./g, '已載入。');
+      zh = zh.replace(/fetched\./g, '已下載。');
+      zh = zh.replace(/completed,/g, '完成，耗時');
+      zh = zh.replace(/secs elapsed\./g, '秒。');
+      zh = zh.replace(/Start to fetch params/g, '開始準備模型檔案...');
+      zh = zh.replace(/Finish loading on WebGPU/g, '本機模型載入完成！');
+      return zh;
+    };
+
     try {
       // 使用支援度極佳、中文能力不錯且小巧的 Qwen2.5 模型
       const engine = await CreateMLCEngine(
         'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
         {
           initProgressCallback: (progress) => {
-            setDownloadProgress(progress.text);
+            setDownloadProgress(translateProgress(progress.text));
           }
         }
       );
