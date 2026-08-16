@@ -158,7 +158,8 @@ function App() {
             setDownloadProgress(translateProgress(progress.text));
           },
           chatOpts: {
-            context_window_size: 8192
+            context_window_size: 4096,
+            sliding_window_size: -1
           }
         }
       );
