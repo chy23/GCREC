@@ -597,6 +597,28 @@ function App() {
 
         {isApiKeySet && !isModelLoading && (
         <div className="glass-card">
+          <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0} style={{ flex: 1, maxWidth: '200px', fontSize: '1.1rem', padding: '0.75rem' }}>
+              {isProcessing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div className="loader"></div>
+                    處理中...
+                  </div>
+                  {chunkProgress && <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>{chunkProgress}</div>}
+                </div>
+              ) : (
+                '開始轉換紀錄'
+              )}
+            </button>
+            
+            {(files.length > 0 || result) && (
+              <button className="btn btn-secondary" onClick={clearData} disabled={isProcessing} style={{ flex: 1, maxWidth: '200px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
+                清除資料重新開始
+              </button>
+            )}
+          </div>
+
           <div className="form-group" style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #E5E7EB' }}>
             <label>篩選對話日期 (選填)</label>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>若只設定開始或結束日期，將自動過濾；若皆留空則處理所有資料。</p>
@@ -659,27 +681,6 @@ function App() {
           </div>
         )}
 
-        <div style={{ marginTop: '2rem', textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0} style={{ flex: 1, maxWidth: '200px' }}>
-            {isProcessing ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <div className="loader"></div>
-                  處理中...
-                </div>
-                {chunkProgress && <div style={{ fontSize: '0.85rem', opacity: 0.8 }}>{chunkProgress}</div>}
-              </div>
-            ) : (
-              '開始轉換紀錄'
-            )}
-          </button>
-          
-          {(files.length > 0 || result) && (
-            <button className="btn btn-secondary" onClick={clearData} disabled={isProcessing} style={{ flex: 1, maxWidth: '200px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
-              清除資料重新開始
-            </button>
-          )}
-        </div>
         </div>
         )}
         </div>
