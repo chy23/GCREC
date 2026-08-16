@@ -64,6 +64,7 @@ const getSystemPrompt = (startDate, endDate) => {
 
 const LOCAL_MODELS = [
   { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', name: 'Llama 3.2 (1B)', desc: '【推薦】極度輕量 (約需 1GB 記憶體)，速度最快且非常聽話，適合一般文書筆電。', provider: 'Meta (美國)' },
+  { id: 'gemma3-1b-it-q4f16_1-MLC', name: 'Gemma 3 (1B)', desc: '【最新】極度輕量 (約需 1GB 記憶體)，Google 最新第三代微型模型，理解能力極佳。', provider: 'Google (美國)' },
   { id: 'gemma-2-2b-it-q4f16_1-MLC', name: 'Gemma 2 (2B)', desc: '輕量平衡 (約需 1.5GB 記憶體)，對話理解能力不錯。', provider: 'Google (美國)' }
 ];
 
