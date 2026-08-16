@@ -233,10 +233,23 @@ function App() {
               let currentChunk = `--- 檔案：${file.name} ---\n`;
               let rowCount = 0;
               for (const row of rows) {
-                // 將陣列轉回單行 CSV 字串，確保內部換行不會被截斷
-                const rowStr = Papa.unparse([row], { header: false });
-                currentChunk += rowStr + '\n';
-                rowCount++;
+                // 將 CSV 陣列轉為人類易讀的對話劇本格式，降低小模型理解負擔
+                let rowStr = '';
+                const cleanRow = row.filter(cell => cell !== undefined && cell !== null && cell.trim() !== '');
+                if (cleanRow.length >= 3) {
+                  const msg = cleanRow[cleanRow.length - 1];
+                  const name = cleanRow[cleanRow.length - 2];
+                  const time = cleanRow.slice(0, cleanRow.length - 2).join(' ');
+                  rowStr = `[${time}] ${name}: ${msg}`;
+                } else {
+                  rowStr = cleanRow.join(' ');
+                }
+                
+                if (rowStr.trim()) {
+                  currentChunk += rowStr + '\n';
+                  rowCount++;
+                }
+
                 if (rowCount >= 40) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
@@ -251,7 +264,9 @@ function App() {
               const lines = text.split('\n');
               let currentChunk = `--- 檔案：${file.name} ---\n`;
               for (let i = 0; i < lines.length; i++) {
-                currentChunk += lines[i] + '\n';
+                if (lines[i].trim()) {
+                  currentChunk += lines[i].trim() + '\n';
+                }
                 if ((i + 1) % 40 === 0) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
@@ -269,7 +284,7 @@ function App() {
             const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。請「嚴格」依照 SYSTEM PROMPT 規定的格式輸出（包含「紀錄 X」、「訪談方式」、「訪談對象」、「訪談日期」、「輔導內容要點」、「聯絡事項」等欄位）。\n\n絕對不要輸出「以下是重點事件...」等開場白，直接輸出紀錄格式即可。若此片段完全沒有重要輔導事件，請直接回覆空白，不要硬寫。\n\n對話紀錄如下：\n\n` + chunks[i] }
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。請「嚴格」依照 SYSTEM PROMPT 規定的格式輸出（包含「紀錄 X」、「訪談方式」、「訪談對象」、「訪談日期」、「輔導內容要點」、「聯絡事項」等欄位）。\n\n【極度重要警告】：\n1. 絕對不要輸出「以下是重點事件...」等開場白。\n2. 你的任務是記錄「學生輔導事件」。如果這段紀錄裡面只有單純的「老師早安」、「謝謝老師」、「貼圖」、或請假等毫無實質輔導意義的閒聊，請你【直接回覆空白】，絕對不要硬湊字數！\n3. 事件紀錄必須是「具體對話內容」，絕對不能只貼上發言人名稱與時間。\n\n對話紀錄如下：\n\n` + chunks[i] }
               ],
               temperature: 0.1,
               stream: true, // 開啟串流模式
