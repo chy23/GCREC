@@ -209,6 +209,9 @@ function App() {
         combinedData += text + '\n\n';
       }
 
+      let generatedText = null;
+      let lastError = null;
+
       if (engineMode === 'local') {
         try {
           console.log('開始本地端推理...');
