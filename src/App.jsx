@@ -317,7 +317,7 @@ function App() {
                   rowCount++;
                 }
 
-                if (rowCount >= 100) {
+                if (rowCount >= 50) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                   rowCount = 0;
@@ -334,12 +334,12 @@ function App() {
                 if (lines[i].trim() && isDateInRange(lines[i])) {
                   currentChunk += lines[i].trim() + '\n';
                 }
-                if ((i + 1) % 100 === 0) {
+                if ((i + 1) % 50 === 0) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
               }
-              if (lines.length % 100 !== 0) chunks.push(currentChunk);
+              if (lines.length % 50 !== 0) chunks.push(currentChunk);
             }
           }
           
