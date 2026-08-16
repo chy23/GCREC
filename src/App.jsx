@@ -323,7 +323,7 @@ function App() {
                   <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>實驗性</span></h4>
                 </div>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>
-                  直接下載 AI 模型 (約 1GB) 到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>極度消耗電腦資源，請確保您有獨立顯示卡，且必須使用最新版的 Google Chrome 或 Microsoft Edge 瀏覽器（Safari 與手機不適用）。</strong>
+                  直接下載 AI 模型 (約 1.5GB) 到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體要求】需使用最新版 Chrome 或 Edge 瀏覽器，且電腦需具備至少 8GB 記憶體與獨立顯示卡（不支援 Safari 與手機）。若硬體規格不足，將導致瀏覽器卡頓或崩潰。</strong>
                 </p>
               </div>
             </div>
