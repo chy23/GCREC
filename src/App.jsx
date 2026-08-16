@@ -118,6 +118,14 @@ const LOCAL_MODELS = [
     desc: '【歐洲新星】來自法國的頂尖語言模型，反應靈敏且多國語言適應力強。', 
     hardware: '需求中等 (約需 2.5GB 記憶體)，建議使用三年內新購之中高階筆電。',
     limitation: '偶爾會夾雜一些非繁體中文的詞彙或語氣。'
+  },
+  { 
+    id: 'Mistral-7B-Instruct-v0.3-q4f16_1-MLC', 
+    name: 'Mistral (7B)', 
+    provider: 'Mistral (法國)',
+    desc: '【歐洲開源霸主】在 7B 級別中公認表現最優異的模型之一，邏輯極度嚴謹。', 
+    hardware: '【高階設備限定】需求極高 (約需 5GB 記憶體)，僅限 Apple M 系列晶片 (16GB RAM) 或電競級筆電使用。',
+    limitation: '與 Gemma 2 (9B) 一樣極度吃重硬體，若配備不足會導致當機。'
   }
 ];
 
