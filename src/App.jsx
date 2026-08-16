@@ -73,7 +73,7 @@ function App() {
   const initWebLLM = async () => {
     setIsModelLoading(true);
     setEngineMode('local');
-    setDownloadProgress('正在初始化引擎，請稍候...');
+    setDownloadProgress('正在下載 AI 引擎核心模組 (約 6MB)，視網路速度可能需要數十秒，請耐心稍候...');
 
     const translateProgress = (text) => {
       if (!text) return '';
@@ -90,12 +90,14 @@ function App() {
     };
 
     try {
-      // 改用動態載入 WebLLM 引擎，大幅減少初始網頁載入時間 (從 6MB 降至數百 KB)
+      // 改用動態載入 WebLLM 引擎，大幅減少初始網頁載入時間
       const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
       
-      // 改用美國 Meta 推出的開源大語言模型 Llama 3.2 (3B)，確保非中國血統
+      setDownloadProgress('核心引擎下載完成！正在向系統申請 WebGPU 資源，即將開始載入 AI 模型...');
+
+      // 改用 Google 推出的 Gemma 2 (2B) 模型，非中國模型且體積適中，減少記憶體崩潰機率
       const engine = await CreateMLCEngine(
-        'Llama-3.2-3B-Instruct-q4f16_1-MLC',
+        'gemma-2-2b-it-q4f16_1-MLC',
         {
           initProgressCallback: (progress) => {
             setDownloadProgress(translateProgress(progress.text));
