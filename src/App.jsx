@@ -73,37 +73,39 @@ function App() {
   const initWebLLM = async () => {
     setIsModelLoading(true);
     setEngineMode('local');
-    setDownloadProgress('正在下載 AI 引擎核心模組 (約 6MB)，視網路速度可能需要數十秒，請耐心稍候...');
+    setDownloadProgress('步驟 1/3: 正在載入 AI 執行環境 (JS模組 約 6MB)，請稍候...');
 
     const translateProgress = (text) => {
       if (!text) return '';
       let zh = text;
-      zh = zh.replace(/Loading model from cache/g, '從快取載入模型');
-      zh = zh.replace(/Fetching param cache/g, '正在下載模型');
+      zh = zh.replace(/Loading model from cache/g, '從瀏覽器快取載入模型');
+      zh = zh.replace(/Fetching param cache/g, '步驟 3/3: 正在下載 AI 模型權重 (約 1.5GB ~ 2GB，初次下載需數分鐘)');
       zh = zh.replace(/loaded\./g, '已載入。');
       zh = zh.replace(/fetched\./g, '已下載。');
       zh = zh.replace(/completed,/g, '完成，耗時');
       zh = zh.replace(/secs elapsed\./g, '秒。');
-      zh = zh.replace(/Start to fetch params/g, '開始準備模型檔案...');
-      zh = zh.replace(/Finish loading on WebGPU/g, '本機模型載入完成！');
+      zh = zh.replace(/Start to fetch params/g, '開始連線並準備下載模型檔案...');
+      zh = zh.replace(/Finish loading on WebGPU/g, '本機模型載入完成！準備就緒。');
       return zh;
     };
 
     try {
-      // 改用動態載入 WebLLM 引擎，大幅減少初始網頁載入時間
+      // 1. 動態載入 WebLLM 引擎 (約 6MB)
       const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
       
-      setDownloadProgress('核心引擎下載完成！正在向系統申請 WebGPU 資源，即將開始載入 AI 模型...');
+      setDownloadProgress('步驟 2/3: 執行環境載入完成！正在向系統申請 WebGPU 運算資源...');
 
-      // 改用 Google 推出的 Gemma 2 (2B) 模型，非中國模型且體積適中，減少記憶體崩潰機率
+      // 2. 申請資源並開始載入/下載模型 weights (約 1.5GB)
+      // 改用 Google 推出的 Gemma 2 (2B) 模型
       const engine = await CreateMLCEngine(
         'gemma-2-2b-it-q4f16_1-MLC',
         {
           initProgressCallback: (progress) => {
+            // WebLLM 會回傳進度字串，包含下載 % 數等
             setDownloadProgress(translateProgress(progress.text));
           },
           chatOpts: {
-            context_window_size: 8192 // 放寬至 8192 增加容錯率
+            context_window_size: 8192
           }
         }
       );
