@@ -188,6 +188,15 @@ function App() {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const clearData = () => {
+    setFiles([]);
+    setResult('');
+    setChunkProgress('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const processFiles = async () => {
     if (engineMode === 'api' && !apiKey) {
       alert("請先輸入 Gemini API Key");
@@ -545,8 +554,8 @@ function App() {
           </div>
         )}
 
-        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-          <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0}>
+        <div style={{ marginTop: '2rem', textAlign: 'center', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+          <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0} style={{ flex: 1, maxWidth: '200px' }}>
             {isProcessing ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -559,6 +568,12 @@ function App() {
               '開始轉換紀錄'
             )}
           </button>
+          
+          {(files.length > 0 || result) && (
+            <button className="btn btn-secondary" onClick={clearData} disabled={isProcessing} style={{ flex: 1, maxWidth: '200px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-main)' }}>
+              清除資料重新開始
+            </button>
+          )}
         </div>
         </div>
         )}
