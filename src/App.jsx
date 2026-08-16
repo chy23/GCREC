@@ -263,7 +263,7 @@ function App() {
             const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
-                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄，請依照系統提示擷取重點事件（若此片段無重要輔導事件，請完全不要輸出任何文字，保持空白即可）：\n\n` + chunks[i] }
+                { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄。請「嚴格」依照 SYSTEM PROMPT 規定的格式輸出（包含「紀錄 X」、「訪談方式」、「訪談對象」、「訪談日期」、「輔導內容要點」、「聯絡事項」等欄位）。\n\n絕對不要輸出「以下是重點事件...」等開場白，直接輸出紀錄格式即可。若此片段完全沒有重要輔導事件，請直接回覆空白，不要硬寫。\n\n對話紀錄如下：\n\n` + chunks[i] }
               ],
               temperature: 0.1,
               stream: true, // 開啟串流模式
