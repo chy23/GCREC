@@ -224,17 +224,26 @@ function App() {
           
           let fullResult = "";
           for (let i = 0; i < chunks.length; i++) {
-            setChunkProgress(`處理進度: ${i+1} / ${chunks.length}`);
+            setChunkProgress(`處理進度: ${i+1} / ${chunks.length} (正在即時生成中...)`);
             console.log(`處理本地區塊 ${i+1}/${chunks.length}`);
             
-            const reply = await mlcEngine.chat.completions.create({
+            const stream = await mlcEngine.chat.completions.create({
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 { role: "user", content: `這是第 ${i+1}/${chunks.length} 部分的對話紀錄，請依照系統提示進行轉換：\n\n` + chunks[i] }
               ],
               temperature: 0.1,
+              stream: true, // 開啟串流模式
             });
-            fullResult += reply.choices[0].message.content + "\n\n";
+            
+            for await (const chunk of stream) {
+              const text = chunk.choices[0]?.delta?.content || "";
+              fullResult += text;
+              // 讓畫面即時顯示最新生成的字元，大幅提升體感速度
+              setResult(fullResult);
+            }
+            fullResult += "\n\n";
+            setResult(fullResult);
           }
           
           generatedText = fullResult;
@@ -504,7 +513,7 @@ function App() {
         {/* Right Column: Results / Skeleton / Empty State */}
         <div className="layout-col">
           <div className="glass-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {isProcessing ? (
+            {isProcessing && !result ? (
               <div style={{ flex: 1 }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
                   <AlertCircle size={20} color="var(--primary)" />
