@@ -91,9 +91,9 @@ function App() {
     };
 
     try {
-      // 使用支援度極佳、中文能力不錯且小巧的 Qwen2.5 模型
+      // 改用美國 Meta 推出的開源大語言模型 Llama 3.2 (3B)，確保非中國血統
       const engine = await CreateMLCEngine(
-        'Qwen2.5-1.5B-Instruct-q4f16_1-MLC',
+        'Llama-3.2-3B-Instruct-q4f16_1-MLC',
         {
           initProgressCallback: (progress) => {
             setDownloadProgress(translateProgress(progress.text));
