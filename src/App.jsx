@@ -97,6 +97,9 @@ function App() {
         {
           initProgressCallback: (progress) => {
             setDownloadProgress(translateProgress(progress.text));
+          },
+          chatOpts: {
+            context_window_size: 8192 // 放寬至 8192 增加容錯率
           }
         }
       );
@@ -210,9 +213,10 @@ function App() {
         try {
           console.log('開始本地端推理...');
           
-          // 本地模型 Context Window 有限 (通常 4096)，必須將巨量文本分塊 (Chunking)
+          // 本地模型 Context Window 有限 (預設 4096)，必須將巨量文本切得更碎
+          // 加上 System Prompt 的長度，每次處理的對話行數需要再下修
           const lines = combinedData.split('\n');
-          const maxLinesPerChunk = 150; // 每次處理約 150 行對話，避免超過 Token 限制
+          const maxLinesPerChunk = 40; // 將原本的 150 降低為 40 行，確保不超過 4000 token 限制
           const chunks = [];
           for (let i = 0; i < lines.length; i += maxLinesPerChunk) {
             chunks.push(lines.slice(i, i + maxLinesPerChunk).join('\n'));
