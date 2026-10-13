@@ -432,11 +432,22 @@ function App() {
           'gemini-3.8-flash',
           'gemini-3.7-flash',
           'gemini-3.6-flash',
+          'gemini-4-argon',
           'gemini-3.1-pro-preview'
         ];
 
         for (const model of modelsToTry) {
           try {
+            if (model === 'gemini-4-argon') {
+              const confirmArgon = window.confirm(
+                "【備援模型切換確認】\n前述模型未能成功回應。\n即將調用最新高階備援模型「gemini-4-argon」進行處理。\n\n是否確認調用此模型繼續進行？\n（若點擊「取消」，系統將自動跳過並嘗試下一個備援模型）"
+              );
+              if (!confirmArgon) {
+                console.log("使用者取消調用 gemini-4-argon，跳過嘗試此模型");
+                continue;
+              }
+            }
+
             console.log(`嘗試使用模型: ${model}`);
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
               method: 'POST',
@@ -467,7 +478,7 @@ function App() {
         }
 
         if (!generatedText) {
-          throw new Error(`所有模型皆嘗試失敗。最後錯誤: ${lastError.message}`);
+          throw new Error(`所有模型皆嘗試失敗。最後錯誤: ${lastError ? lastError.message : '所有可用模型均被跳過或失敗'}`);
         }
       }
 
@@ -535,6 +546,8 @@ function App() {
                   使用 Google 強大的 Gemini 伺服器進行轉換。速度極快、排版最精確，且任何舊電腦或手機皆可使用。<strong>需自備 API Key。</strong>
                   <br/>
                   <span style={{color: '#4F46E5', fontWeight: 600}}>📊 處理容量：</span>最高支援單次上傳 100 萬字以上 (適合極大量且需瞬間完成的任務)
+                  <br/>
+                  <span style={{color: '#6366F1', fontWeight: 600}}>🔄 自動備援階層：</span>gemini-3.8-flash ➔ gemini-3.7-flash ➔ gemini-3.6-flash ➔ gemini-4-argon (調用前確認) ➔ gemini-3.1-pro-preview
                 </p>
               </div>
 
