@@ -1,6 +1,13 @@
 [
   {
-    "version": "v-de39257",
+    "version": "v-0b427d2",
+    "date": "2026-10-14",
+    "title": "Feat: 統一 WebLLM 模型規格，補齊 Llama-3.1-8B 並標註廠商、國家、大小、特點與建議",
+    "details": "常規系統更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-72e93bc",
     "date": "2026-10-14",
     "title": "Feat: 雲端 API 備援模型新增 gemini-4-argon 並加入調用前確認機制",
     "details": "更新雲端 API 備援模型順序，將最新模型選項「gemini-4-argon」設為 gemini-3.1-pro-preview 前一順位的備援模型。當前述 Flash 模型皆失敗而需調用 gemini-4-argon 時，系統將主動彈出確認視窗；使用者確認後調用，若取消則自動嘗試下一個備援模型。目前完整調用序列為：gemini-3.8-flash ➔ gemini-3.7-flash ➔ gemini-3.6-flash ➔ gemini-4-argon ➔ gemini-3.1-pro-preview。",
@@ -339,13 +346,6 @@
     "version": "v-0ae1d8b",
     "date": "2026-08-16",
     "title": "UX: 具體說明本機離線模式的硬體最低需求 (8GB記憶體、獨立顯卡等)",
-    "details": "常規系統更新或效能優化",
-    "bugs": "無"
-  },
-  {
-    "version": "v-97332d0",
-    "date": "2026-08-16",
-    "title": "UX: 於引擎選擇畫面明確標示本機離線模式僅支援 Chrome/Edge 瀏覽器",
     "details": "常規系統更新或效能優化",
     "bugs": "無"
   }
