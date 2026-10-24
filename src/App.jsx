@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter, Cpu, CloudLightning } from 'lucide-react';
 import './index.css';
@@ -129,6 +129,56 @@ const LOCAL_MODELS = [
   }
 ];
 
+// 桌面版 (Electron) 會透過 preload 注入 window.desktopAPI；網頁版則為 undefined
+const desktopAPI = typeof window !== 'undefined' ? window.desktopAPI : undefined;
+
+// 本機模型每次處理的文字長度上限：桌面版 llama-server 的 context 較大，可一次處理較長片段，減少事件被切斷
+const LOCAL_CHUNK_LIMIT = desktopAPI ? 6000 : 2500;
+
+// 將內嵌 llama-server 的 OpenAI 相容 API 包裝成與 WebLLM 相同的介面 (chat.completions.create + 串流)，
+// 讓後續切塊、即時顯示與重新編號的邏輯可以共用
+const createDesktopEngine = (baseUrl) => ({
+  chat: {
+    completions: {
+      create: async ({ messages, temperature }) => {
+        const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, temperature, stream: true }),
+        });
+        if (!response.ok || !response.body) {
+          throw new Error(`本機推論引擎回應錯誤 (${response.status})：${await response.text()}`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        return {
+          async *[Symbol.asyncIterator]() {
+            let buffer = '';
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop();
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data:')) continue;
+                const payload = trimmed.slice(5).trim();
+                if (payload === '[DONE]') return;
+                try {
+                  yield JSON.parse(payload);
+                } catch (e) {
+                  // 忽略不完整或非 JSON 的事件
+                }
+              }
+            }
+          },
+        };
+      },
+    },
+  },
+});
+
 function App() {
   const [apiKey, setApiKey] = useState('');
   const [isApiKeySet, setIsApiKeySet] = useState(false);
@@ -153,8 +203,40 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [selectedLocalModel, setSelectedLocalModel] = useState(LOCAL_MODELS[0].id);
+  // 桌面版：安裝包內實際內建的模型清單 (輕量版 / 完整版)
+  const [desktopInfo, setDesktopInfo] = useState(null);
+  const localModels = desktopAPI ? (desktopInfo?.models || []) : LOCAL_MODELS;
+
+  useEffect(() => {
+    if (!desktopAPI) return;
+    desktopAPI.listModels().then((info) => {
+      setDesktopInfo(info);
+      if (info.models.length > 0) setSelectedLocalModel(info.models[0].id);
+    }).catch((err) => alert('讀取內建模型清單失敗：' + err.message));
+  }, []);
+
+  const initDesktopModel = async () => {
+    setIsModelLoading(true);
+    setEngineMode('local');
+    setDownloadProgress('正在啟動內建推論引擎...');
+    const unsubscribe = desktopAPI.onStatus((text) => setDownloadProgress(text));
+    try {
+      const { baseUrl } = await desktopAPI.startModel(selectedLocalModel);
+      setMlcEngine(createDesktopEngine(baseUrl));
+      setDownloadProgress('');
+      setIsApiKeySet(true);
+    } catch (error) {
+      console.error(error);
+      alert('啟動內建模型失敗，可能是記憶體不足，請關閉其他程式或改選較小的模型。\n\n錯誤訊息：' + error.message);
+      setEngineMode('setup');
+    } finally {
+      unsubscribe();
+      setIsModelLoading(false);
+    }
+  };
 
   const initWebLLM = async () => {
+    if (desktopAPI) return initDesktopModel();
     setIsModelLoading(true);
     setEngineMode('local');
     setDownloadProgress('步驟 1/3: 正在載入 AI 執行環境 (JS模組 約 6MB)，請稍候...');
@@ -389,7 +471,7 @@ function App() {
                   currentChunk += rowStr + '\n';
                 }
 
-                if (currentChunk.length >= 2500) {
+                if (currentChunk.length >= LOCAL_CHUNK_LIMIT) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
@@ -405,7 +487,7 @@ function App() {
                 if (lines[i].trim() && isDateInRange(lines[i])) {
                   currentChunk += lines[i].trim() + '\n';
                 }
-                if (currentChunk.length >= 2500) {
+                if (currentChunk.length >= LOCAL_CHUNK_LIMIT) {
                   chunks.push(currentChunk);
                   currentChunk = `--- 檔案：${file.name} (續) ---\n`;
                 }
@@ -586,24 +668,24 @@ function App() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                   <Cpu size={24} color="#10B981" />
-                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>實驗性</span></h4>
+                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>{desktopAPI ? `桌面${desktopInfo?.editionName || ''}` : '實驗性'}</span></h4>
                 </div>
                 
                 <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>選擇要下載的開源模型 (免安裝)：</label>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>{desktopAPI ? '選擇內建模型 (已包含在安裝檔中，免下載)：' : '選擇要下載的開源模型 (免安裝)：'}</label>
                   <select 
                     value={selectedLocalModel} 
                     onChange={(e) => setSelectedLocalModel(e.target.value)}
                     style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem', fontWeight: 500 }}
                   >
-                    {LOCAL_MODELS.map(m => (
+                    {localModels.map(m => (
                       <option key={m.id} value={m.id}>
                         {m.name} ({m.size}) · {m.vendor} ({m.country})
                       </option>
                     ))}
                   </select>
                   {(() => {
-                    const cur = LOCAL_MODELS.find(m => m.id === selectedLocalModel);
+                    const cur = localModels.find(m => m.id === selectedLocalModel);
                     if (!cur) return null;
                     return (
                       <div style={{ fontSize: '0.85rem', marginTop: '0.75rem', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '0.75rem 1rem', borderRadius: '8px', lineHeight: 1.6 }}>
@@ -629,11 +711,15 @@ function App() {
                   }}
                   style={{ width: '100%', background: '#10B981', color: 'white', border: 'none' }}
                 >
-                  開始下載並啟動 {LOCAL_MODELS.find(m => m.id === selectedLocalModel)?.name}
+                  {desktopAPI ? '啟動' : '開始下載並啟動'} {localModels.find(m => m.id === selectedLocalModel)?.name}
                 </button>
 
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '1rem 0 0 0', lineHeight: 1.5 }}>
-                  直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong>
+                  {desktopAPI ? (
+                    <>模型已內建於安裝檔，使用電腦本身的 {desktopAPI.platform === 'darwin' ? 'Apple Silicon (Metal)' : '顯示卡 (Vulkan)'} 硬體加速執行。資料完全不離開這台電腦，免網路、免費。</>
+                  ) : (
+                    <>直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong></>
+                  )}
                   <br/>
                   <span style={{color: '#059669', fontWeight: 600}}>📊 處理容量：</span>採用自動分批處理技術，總資料量<strong>無上限</strong>，無論幾千筆對話都能完全消化 (資料越多僅影響等待時間)。
                 </p>
@@ -645,9 +731,9 @@ function App() {
         {engineMode === 'local' && isModelLoading && (
           <div className="glass-card" style={{ border: '2px solid var(--secondary)', textAlign: 'center' }}>
             <Cpu size={32} color="var(--secondary)" style={{ marginBottom: '1rem' }} />
-            <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>正在為您下載並載入本機模型...</h3>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--secondary)' }}>{desktopAPI ? '正在載入內建模型...' : '正在為您下載並載入本機模型...'}</h3>
             <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-              這會需要幾分鐘的時間，且取決於您的網路速度。<br/>若您的電腦沒有足夠的記憶體或未支援 WebGPU，載入可能會失敗。
+              {desktopAPI ? <>模型越大載入越久，通常需要 10~60 秒。<br/>若電腦記憶體不足，載入可能會失敗。</> : <>這會需要幾分鐘的時間，且取決於您的網路速度。<br/>若您的電腦沒有足夠的記憶體或未支援 WebGPU，載入可能會失敗。</>}
             </p>
             <div style={{ background: '#F3F4F6', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem', color: '#4B5563', fontFamily: 'monospace', wordBreak: 'break-all' }}>
               {downloadProgress}
@@ -656,6 +742,7 @@ function App() {
               className="btn btn-secondary" 
               style={{ marginTop: '1.5rem' }}
               onClick={() => {
+                if (desktopAPI) desktopAPI.stopModel();
                 setEngineMode('setup');
                 setIsModelLoading(false);
               }}

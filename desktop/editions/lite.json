@@ -1,0 +1,32 @@
+{
+  "edition": "lite",
+  "editionName": "輕量版",
+  "models": [
+    {
+      "id": "llama-3.2-3b",
+      "file": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "bytes": 2019377696,
+      "url": "https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf",
+      "name": "Llama 3.2 (3B)",
+      "vendor": "Meta",
+      "country": "美國",
+      "size": "3B (約 30 億參數 / 2.0 GB)",
+      "features": "速度快、對格式指令服從性高，適合一般長度的對話紀錄整理。",
+      "advice": "約需 4GB 可用記憶體，8GB 記憶體的 Mac / Windows 筆電皆可順暢執行。",
+      "license": "Llama 3.2 Community License — Built with Llama"
+    },
+    {
+      "id": "gemma-4-e4b",
+      "file": "gemma-4-E4B-it-Q4_K_M.gguf",
+      "bytes": 4977171584,
+      "url": "https://huggingface.co/unsloth/gemma-4-E4B-it-GGUF/resolve/main/gemma-4-E4B-it-Q4_K_M.gguf",
+      "name": "Gemma 4 (E4B)",
+      "vendor": "Google",
+      "country": "美國",
+      "size": "E4B (有效約 40 億參數 / 5.0 GB)",
+      "features": "Google 第四代邊緣裝置模型，繁體中文語意理解與摘要品質優於 3B 模型。",
+      "advice": "約需 6~7GB 可用記憶體，建議 16GB 記憶體電腦；8GB 電腦請先關閉其他程式。",
+      "license": "Gemma Terms of Use"
+    }
+  ]
+}

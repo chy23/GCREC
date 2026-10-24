@@ -1,0 +1,12 @@
+LLAMA 3.2 COMMUNITY LICENSE AGREEMENT
+Llama 3.2 Version Release Date: September 25, 2024
+
+"Agreement" means the terms and conditions for use, reproduction, distribution and modification of the Llama Materials set forth herein.
+"Documentation" means the specifications, manuals and documentation accompanying Llama 3.2 distributed by Meta at https://llama.meta.com/doc/overview.
+"Non-commercial Research Purpose" means non-commercial research, academic or educational use of the Llama Materials.
+"Llama 3.2" means the foundational large language models and software and algorithms, including machine-learning model code, trained model weights, inference-enabling code, training-enabling code, fine-tuning enabling code and other elements of the foregoing distributed by Meta at https://llama.meta.com/llama-downloads.
+"Llama Materials" means, collectively, Meta's proprietary Llama 3.2 and Documentation (and any portion thereof) made available under this Agreement.
+"Meta" or "we" means Meta Platforms, Inc. (if you are located in or, if you are an entity, your principal place of business is in the United States) or Meta Platforms Ireland Limited (if you are located outside the United States).
+
+By using or distributing any portion or element of the Llama Materials, you agree to be bound by this Agreement.
+Built with Llama.

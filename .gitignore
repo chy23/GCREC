@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Desktop app build artifacts
+desktop/bin/
+desktop/models/
+desktop/.cache/
+dist-desktop/
+release/
