@@ -1,0 +1,31 @@
+{
+  "appId": "com.teacher.gcrec",
+  "productName": "教師輔導紀錄小幫手",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist-desktop/**/*",
+    "electron/**/*",
+    "package.json"
+  ],
+  "asar": true,
+  "asarUnpack": [
+    "**/node_modules/node-llama-cpp/**/*"
+  ],
+  "mac": {
+    "target": [
+      { "target": "dmg", "arch": ["arm64"] },
+      { "target": "zip", "arch": ["arm64"] }
+    ],
+    "category": "public.app-category.education",
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false,
+    "identity": null
+  },
+  "win": {
+    "target": [
+      { "target": "zip", "arch": ["x64"] }
+    ]
+  }
+}

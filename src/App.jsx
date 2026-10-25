@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter, Cpu, CloudLightning } from 'lucide-react';
 import './index.css';
+import ModelHubManager from './components/ModelHubManager';
 
 import CHANGELOG from './changelog.json';
 
@@ -129,8 +130,8 @@ const LOCAL_MODELS = [
   }
 ];
 
-// 桌面版 (Electron) 會透過 preload 注入 window.desktopAPI；網頁版則為 undefined
-const desktopAPI = typeof window !== 'undefined' ? window.desktopAPI : undefined;
+// 桌面版 (Electron) 會透過 preload 注入 window.electronAPI / window.desktopAPI
+const desktopAPI = typeof window !== 'undefined' ? (window.electronAPI || window.desktopAPI) : undefined;
 
 // 本機模型每次處理的文字長度上限：桌面版 llama-server 的 context 較大，可一次處理較長片段，減少事件被切斷
 const LOCAL_CHUNK_LIMIT = desktopAPI ? 6000 : 2500;
@@ -203,36 +204,23 @@ function App() {
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
   const [selectedLocalModel, setSelectedLocalModel] = useState(LOCAL_MODELS[0].id);
-  // 桌面版：安裝包內實際內建的模型清單 (輕量版 / 完整版)
+  const [loadedModelName, setLoadedModelName] = useState('');
   const [desktopInfo, setDesktopInfo] = useState(null);
-  const localModels = desktopAPI ? (desktopInfo?.models || []) : LOCAL_MODELS;
+  const localModels = LOCAL_MODELS;
 
   useEffect(() => {
     if (!desktopAPI) return;
-    desktopAPI.listModels().then((info) => {
-      setDesktopInfo(info);
-      if (info.models.length > 0) setSelectedLocalModel(info.models[0].id);
-    }).catch((err) => alert('讀取內建模型清單失敗：' + err.message));
+    if (desktopAPI.getModelsStatus) {
+      desktopAPI.getModelsStatus().then((status) => {
+        if (status?.currentLoadedModel) {
+          setLoadedModelName(status.currentLoadedModel);
+        }
+      }).catch((err) => console.error('讀取本機模型狀態失敗：', err));
+    }
   }, []);
 
   const initDesktopModel = async () => {
-    setIsModelLoading(true);
-    setEngineMode('local');
-    setDownloadProgress('正在啟動內建推論引擎...');
-    const unsubscribe = desktopAPI.onStatus((text) => setDownloadProgress(text));
-    try {
-      const { baseUrl } = await desktopAPI.startModel(selectedLocalModel);
-      setMlcEngine(createDesktopEngine(baseUrl));
-      setDownloadProgress('');
-      setIsApiKeySet(true);
-    } catch (error) {
-      console.error(error);
-      alert('啟動內建模型失敗，可能是記憶體不足，請關閉其他程式或改選較小的模型。\n\n錯誤訊息：' + error.message);
-      setEngineMode('setup');
-    } finally {
-      unsubscribe();
-      setIsModelLoading(false);
-    }
+    // 桌面版使用 ModelHubManager 進行載入
   };
 
   const initWebLLM = async () => {
@@ -384,7 +372,7 @@ function App() {
       alert("請先輸入 Gemini API Key");
       return;
     }
-    if (engineMode === 'local' && !mlcEngine) {
+    if (engineMode === 'local' && !desktopAPI?.generateAi && !mlcEngine) {
       alert("本地端模型尚未準備完成");
       return;
     }
@@ -503,25 +491,46 @@ function App() {
             setChunkProgress(`處理進度: ${i+1} / ${chunks.length} (正在即時生成中...)`);
             console.log(`處理本地區塊 ${i+1}/${chunks.length}`);
             
-            const stream = await mlcEngine.chat.completions.create({
-              messages: [
-                { role: "system", content: "你是一位負責資料處理的AI助理。你的唯一任務是分析對話紀錄，嚴格遵守使用者提供的格式要求，萃取出重要的輔導事件。絕對不要加上任何自己的解釋，不准輸出 Markdown 星號。" },
-                { role: "user", content: `請分析以下對話紀錄：\n\n<對話紀錄>\n${chunks[i]}\n</對話紀錄>\n\n==========\n【極度重要】請嚴格依據上述 <對話紀錄> 內的內容，提取出重要輔導事件。請完全依照以下結構填寫，並將小括號 ( ) 內的提示文字【替換為對話中的真實資料】，絕對不可以照抄括號與提示字！也請維持乾淨的純文字，不要加上任何 Markdown 星號或【】括號：\n\n紀錄 (此處不需編號，請固定輸出「紀錄」二字即可)\n訪談方式：通訊軟體\n訪談對象：(此處填寫家長真實名稱，如 王大明媽媽)\n訪談日期：(此處填寫對話日期，如 2026/04/13)\n輔導內容要點：(請濃縮為 10 字以內的事件主旨，例如：作業未交、學習狀況、人際衝突)\n聯絡事項：\n　事件紀錄：(客觀陳述具體事件)\n　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)\n\n【重要過濾規則】：\n1. 絕對不可以直接複製貼上原始對話！\n2. 嚴格過濾無效紀錄：若對話內容僅為單純的「日常問候」、「純請假」、「接送交代」、「物品轉交/提醒帶東西(例如交代放補習班)」、「交代行政庶務」，這些都【不屬於】輔導事件，請直接回覆空白，絕對不要輸出任何紀錄！只有涉及學生學習狀況、行為常規、人際衝突或身心健康的討論，才需要被記錄。\n3. 若同一天內發生的同一個主題對話（例如針對同一個問題來回討論），請務必整合成「單一筆」紀錄，絕對不可以將同一個事件拆分成多筆！` }
-              ],
-              temperature: 0.1,
-              stream: true, // 開啟串流模式
-            });
-            
-            for await (const chunk of stream) {
-              const text = chunk.choices[0]?.delta?.content || "";
-              fullResult += text;
-              // 讓畫面即時顯示最新生成的字元，並透過正則表達式動態跨區塊重新編號
-              let counter = 1;
-              const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
-                const prefix = match.startsWith('\n') ? '\n' : '';
-                return `${prefix}紀錄 ${counter++}\n`;
+            const promptContent = `請分析以下對話紀錄：\n\n<對話紀錄>\n${chunks[i]}\n</對話紀錄>\n\n==========\n【極度重要】請嚴格依據上述 <對話紀錄> 內的內容，提取出重要輔導事件。請完全依照以下結構填寫，並將小括號 ( ) 內的提示文字【替換為對話中的真實資料】，絕對不可以照抄括號與提示字！也請維持乾淨的純文字，不要加上任何 Markdown 星號或【】括號：\n\n紀錄 (此處不需編號，請固定輸出「紀錄」二字即可)\n訪談方式：通訊軟體\n訪談對象：(此處填寫家長真實名稱，如 王大明媽媽)\n訪談日期：(此處填寫對話日期，如 2026/04/13)\n輔導內容要點：(請濃縮為 10 字以內的事件主旨，例如：作業未交、學習狀況、人際衝突)\n聯絡事項：\n　事件紀錄：(客觀陳述具體事件)\n　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)\n\n【重要過濾規則】：\n1. 絕對不可以直接複製貼上原始對話！\n2. 嚴格過濾無效紀錄：若對話內容僅為單純的「日常問候」、「純請假」、「接送交代」、「物品轉交/提醒帶東西(例如交代放補習班)」、「交代行政庶務」，這些都【不屬於】輔導事件，請直接回覆空白，絕對不要輸出任何紀錄！只有涉及學生學習狀況、行為常規、人際衝突或身心健康的討論，才需要被記錄。\n3. 若同一天內發生的同一個主題對話（例如針對同一個問題來回討論），請務必整合成「單一筆」紀錄，絕對不可以將同一個事件拆分成多筆！`;
+
+            if (desktopAPI?.generateAi) {
+              const unsubscribe = desktopAPI.onChunk((text) => {
+                fullResult += text;
+                let counter = 1;
+                const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
+                  const prefix = match.startsWith('\n') ? '\n' : '';
+                  return `${prefix}紀錄 ${counter++}\n`;
+                });
+                setResult(displayResult);
               });
-              setResult(displayResult);
+
+              try {
+                const res = await desktopAPI.generateAi({ prompt: promptContent });
+                if (!res.success) throw new Error(res.error || "本機生成失敗");
+              } finally {
+                unsubscribe();
+              }
+            } else if (mlcEngine) {
+              const stream = await mlcEngine.chat.completions.create({
+                messages: [
+                  { role: "system", content: "你是一位負責資料處理的AI助理。你的唯一任務是分析對話紀錄，嚴格遵守使用者提供的格式要求，萃取出重要的輔導事件。絕對不要加上任何自己的解釋，不准輸出 Markdown 星號。" },
+                  { role: "user", content: promptContent }
+                ],
+                temperature: 0.1,
+                stream: true, // 開啟串流模式
+              });
+              
+              for await (const chunk of stream) {
+                const text = chunk.choices[0]?.delta?.content || "";
+                fullResult += text;
+                // 讓畫面即時顯示最新生成的字元，並透過正則表達式動態跨區塊重新編號
+                let counter = 1;
+                const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
+                  const prefix = match.startsWith('\n') ? '\n' : '';
+                  return `${prefix}紀錄 ${counter++}\n`;
+                });
+                setResult(displayResult);
+              }
             }
             fullResult += "\n\n";
             let finalCounter = 1;
@@ -662,68 +671,87 @@ function App() {
                 </p>
               </div>
 
-              <div 
-                className="engine-option-card"
-                style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'default', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                  <Cpu size={24} color="#10B981" />
-                  <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>{desktopAPI ? `桌面${desktopInfo?.editionName || ''}` : '實驗性'}</span></h4>
-                </div>
-                
-                <div style={{ marginBottom: '1rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>{desktopAPI ? '選擇內建模型 (已包含在安裝檔中，免下載)：' : '選擇要下載的開源模型 (免安裝)：'}</label>
-                  <select 
-                    value={selectedLocalModel} 
-                    onChange={(e) => setSelectedLocalModel(e.target.value)}
-                    style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem', fontWeight: 500 }}
-                  >
-                    {localModels.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} ({m.size}) · {m.vendor} ({m.country})
-                      </option>
-                    ))}
-                  </select>
-                  {(() => {
-                    const cur = localModels.find(m => m.id === selectedLocalModel);
-                    if (!cur) return null;
-                    return (
-                      <div style={{ fontSize: '0.85rem', marginTop: '0.75rem', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '0.75rem 1rem', borderRadius: '8px', lineHeight: 1.6 }}>
-                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.35rem', fontWeight: 600, color: '#065F46' }}>
-                          <span>🏢 廠商：{cur.vendor}</span>
-                          <span>🌍 國家：{cur.country}</span>
-                          <span>⚖️ 參數大小：{cur.size}</span>
-                        </div>
-                        <div style={{ color: '#059669', marginBottom: '0.2rem' }}><strong>✨ 核心特點：</strong>{cur.features}</div>
-                        <div style={{ color: '#047857' }}><strong>💡 設備與使用建議：</strong>{cur.advice}</div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => {
-                    const confirmed = window.confirm("⚠️ 注意：離線模型處理效能有限，彙整資訊與原意可能有差異，請反覆確認才做使用。強烈建議以「雲端API模式」為優先使用。\n\n您確定要繼續啟動本機模型嗎？");
-                    if (confirmed) {
-                      initWebLLM();
-                    }
-                  }}
-                  style={{ width: '100%', background: '#10B981', color: 'white', border: 'none' }}
+              {desktopAPI ? (
+                <div 
+                  className="engine-option-card"
+                  style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', background: 'rgba(255,255,255,0.95)' }}
                 >
-                  {desktopAPI ? '啟動' : '開始下載並啟動'} {localModels.find(m => m.id === selectedLocalModel)?.name}
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <Cpu size={24} color="#10B981" />
+                    <h4 style={{ margin: 0, fontSize: '1.1rem' }}>
+                      本機離線模式 
+                      <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>
+                        桌面共享模型庫 · 硬體加速
+                      </span>
+                    </h4>
+                  </div>
+                  
+                  <ModelHubManager onModelLoaded={(res) => {
+                    setEngineMode('local');
+                    setIsApiKeySet(true);
+                    setLoadedModelName(res?.model?.name || res?.model?.id || '本機離線模型');
+                  }} />
+                </div>
+              ) : (
+                <div 
+                  className="engine-option-card"
+                  style={{ p: 2, border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', cursor: 'default', background: 'rgba(255,255,255,0.9)', transition: 'all 0.2s' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                    <Cpu size={24} color="#10B981" />
+                    <h4 style={{ margin: 0, fontSize: '1.1rem' }}>本機離線模式 <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>實驗性 (瀏覽器 WebGPU)</span></h4>
+                  </div>
+                  
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem' }}>選擇要下載的開源模型 (免安裝)：</label>
+                    <select 
+                      value={selectedLocalModel} 
+                      onChange={(e) => setSelectedLocalModel(e.target.value)}
+                      style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '0.95rem', fontWeight: 500 }}
+                    >
+                      {localModels.map(m => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.size}) · {m.vendor} ({m.country})
+                        </option>
+                      ))}
+                    </select>
+                    {(() => {
+                      const cur = localModels.find(m => m.id === selectedLocalModel);
+                      if (!cur) return null;
+                      return (
+                        <div style={{ fontSize: '0.85rem', marginTop: '0.75rem', background: '#ECFDF5', border: '1px solid #A7F3D0', padding: '0.75rem 1rem', borderRadius: '8px', lineHeight: 1.6 }}>
+                          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.35rem', fontWeight: 600, color: '#065F46' }}>
+                            <span>🏢 廠商：{cur.vendor}</span>
+                            <span>🌍 國家：{cur.country}</span>
+                            <span>⚖️ 參數大小：{cur.size}</span>
+                          </div>
+                          <div style={{ color: '#059669', marginBottom: '0.2rem' }}><strong>✨ 核心特點：</strong>{cur.features}</div>
+                          <div style={{ color: '#047857' }}><strong>💡 設備與使用建議：</strong>{cur.advice}</div>
+                        </div>
+                      );
+                    })()}
+                  </div>
 
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '1rem 0 0 0', lineHeight: 1.5 }}>
-                  {desktopAPI ? (
-                    <>模型已內建於安裝檔，使用電腦本身的 {desktopAPI.platform === 'darwin' ? 'Apple Silicon (Metal)' : '顯示卡 (Vulkan)'} 硬體加速執行。資料完全不離開這台電腦，免網路、免費。</>
-                  ) : (
-                    <>直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong></>
-                  )}
-                  <br/>
-                  <span style={{color: '#059669', fontWeight: 600}}>📊 處理容量：</span>採用自動分批處理技術，總資料量<strong>無上限</strong>，無論幾千筆對話都能完全消化 (資料越多僅影響等待時間)。
-                </p>
-              </div>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => {
+                      const confirmed = window.confirm("⚠️ 注意：離線模型處理效能有限，彙整資訊與原意可能有差異，請反覆確認才做使用。強烈建議以「雲端API模式」為優先使用。\n\n您確定要繼續啟動本機模型嗎？");
+                      if (confirmed) {
+                        initWebLLM();
+                      }
+                    }}
+                    style={{ width: '100%', background: '#10B981', color: 'white', border: 'none' }}
+                  >
+                    開始下載並啟動 {localModels.find(m => m.id === selectedLocalModel)?.name}
+                  </button>
+
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '1rem 0 0 0', lineHeight: 1.5 }}>
+                    直接下載 AI 模型到瀏覽器中執行。資料絕對保密，完全離線免費。<strong>【硬體建議】建議使用最新版 Chrome 或 Edge 瀏覽器，且電腦具備至少 8GB 記憶體與獨立顯示卡。若硬體效能較低，處理速度可能會較為緩慢（暫不支援 Safari 與手機）。</strong>
+                    <br/>
+                    <span style={{color: '#059669', fontWeight: 600}}>📊 處理容量：</span>採用自動分批處理技術，總資料量<strong>無上限</strong>，無論幾千筆對話都能完全消化 (資料越多僅影響等待時間)。
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -796,6 +824,31 @@ function App() {
 
         {isApiKeySet && !isModelLoading && (
         <div className="glass-card">
+          {/* 當前使用引擎提示列與快速切換 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: engineMode === 'local' ? '#ECFDF5' : '#EFF6FF', border: `1px solid ${engineMode === 'local' ? '#A7F3D0' : '#BFDBFE'}`, padding: '0.65rem 1rem', borderRadius: '8px', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: engineMode === 'local' ? '#065F46' : '#1E40AF', fontWeight: 500 }}>
+              {engineMode === 'local' ? (
+                <>
+                  <Cpu size={18} color="#059669" />
+                  <span>🟢 離線推論就緒：<b>{loadedModelName || selectedLocalModel}</b>（完全私密、免連網、硬體加速）</span>
+                </>
+              ) : (
+                <>
+                  <CloudLightning size={18} color="#2563EB" />
+                  <span>⚡ 雲端 API 模式：<b>Gemini 階層備援</b></span>
+                </>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setEngineMode('setup');
+                setIsApiKeySet(false);
+              }}
+              style={{ background: 'white', border: '1px solid #D1D5DB', borderRadius: '6px', padding: '0.3rem 0.75rem', fontSize: '0.85rem', cursor: 'pointer', color: '#374151', fontWeight: 600, boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+            >
+              切換引擎 / 模型
+            </button>
+          </div>
           <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid #E5E7EB', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
             <button className="btn" onClick={processFiles} disabled={isProcessing || files.length === 0} style={{ flex: 1, maxWidth: '200px', fontSize: '1.1rem', padding: '0.75rem' }}>
               {isProcessing ? (

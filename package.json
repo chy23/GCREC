@@ -8,6 +8,9 @@
     "dev": "vite",
     "build": "node scripts/generate-changelog.js && vite build",
     "build:desktop": "vite build --mode desktop",
+    "electron:build:mac": "npm run build:desktop && electron-builder --config electron-builder.json --mac --arm64",
+    "electron:build:win": "npm run build:desktop && electron-builder --config electron-builder.json --win --x64",
+    "electron:build": "npm run build:desktop && electron-builder --config electron-builder.json --mac --arm64 && electron-builder --config electron-builder.json --win --x64",
     "dist:lite:mac": "npm run build:desktop && electron-builder --config electron-builder.lite.cjs --mac --arm64",
     "dist:lite:win": "npm run build:desktop && electron-builder --config electron-builder.lite.cjs --win --x64",
     "dist:lite": "npm run build:desktop && electron-builder --config electron-builder.lite.cjs --mac --arm64 && electron-builder --config electron-builder.lite.cjs --win --x64",
@@ -17,6 +20,7 @@
   "dependencies": {
     "@mlc-ai/web-llm": "^0.2.84",
     "lucide-react": "^1.31.0",
+    "node-llama-cpp": "^3.22.2",
     "papaparse": "^5.5.4",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"

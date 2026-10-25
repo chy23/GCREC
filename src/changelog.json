@@ -1,5 +1,12 @@
 [
   {
+    "version": "v-b8c5afe",
+    "date": "2026-10-24",
+    "title": "Feat: 完成桌面版 (Electron) 架構與輕量版 (Llama 3.2 3B + Gemma 4 E4B) 打包支援",
+    "details": "常規系統更新或效能優化",
+    "bugs": "無"
+  },
+  {
     "version": "v-989fce9",
     "date": "2026-10-21",
     "title": "Feat: 統一 WebLLM 模型規格，新增 Gemma 4 (12B) Q4_K_M",
@@ -341,12 +348,5 @@
     "title": "Fix: 修復本地模型處理大量文本時超過 Context Window 導致崩潰的問題，改採自動分塊 (Chunking) 處理並加入進度提示",
     "details": "常規系統更新或效能優化",
     "bugs": "系統修正：Fix: 修復本地模型處理大量文本時超過 Context Window 導致崩潰的問題，改採自動分塊 (Chunking) 處理並加入進度提示"
-  },
-  {
-    "version": "v-a10bb8a",
-    "date": "2026-08-16",
-    "title": "UX: 柔化本機離線模式的硬體警語語氣，改以較平易近人的建議形式呈現",
-    "details": "常規系統更新或效能優化",
-    "bugs": "無"
   }
 ]
