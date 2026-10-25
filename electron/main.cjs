@@ -1,32 +1,31 @@
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, shell, ipcMain } = require('electron');
 const path = require('path');
-const { ModelManager } = require('./modelManager.cjs');
 
 let mainWindow = null;
-let modelManager = null;
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 960,
-    minHeight: 640,
+    width: 1200,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
     title: '教師輔導紀錄小幫手',
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
-      contextIsolation: true,
       nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
     },
   });
 
-  // 外部連結 (例如 Google AI Studio, Hugging Face) 用系統瀏覽器開啟
+  // 外部連結用系統瀏覽器開啟
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https?:/.test(url)) shell.openExternal(url);
+    if (/^https?:/.test(url) || /^antigravity-hub:/.test(url)) {
+      shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
-
-  modelManager = new ModelManager(mainWindow);
-  modelManager.registerIpc();
 
   if (process.env.VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -35,17 +34,33 @@ const createWindow = () => {
   }
 };
 
+// 註冊 IPC：喚醒 Antigravity Model Hub (本機模型中樞)
+ipcMain.handle('launch-hub', async () => {
+  try {
+    await shell.openExternal('antigravity-hub://launch');
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// 安全開啟外部網址或自訂協定
+ipcMain.handle('open-external', async (event, url) => {
+  if (url && (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('antigravity-hub://'))) {
+    await shell.openExternal(url);
+    return { success: true };
+  }
+  return { success: false, error: '非法的外部連結' };
+});
+
 app.whenReady().then(() => {
   createWindow();
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
 app.on('window-all-closed', () => {
-  app.quit();
-});
-
-process.on('uncaughtException', (err) => {
-  dialog.showErrorBox('發生錯誤', String(err && err.stack ? err.stack : err));
+  if (process.platform !== 'darwin') app.quit();
 });

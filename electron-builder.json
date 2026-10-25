@@ -9,11 +9,8 @@
     "electron/**/*",
     "package.json"
   ],
-  "asar": true,
-  "asarUnpack": [
-    "**/node_modules/node-llama-cpp/**/*"
-  ],
   "mac": {
+    "icon": "build/icon.icns",
     "target": [
       { "target": "dmg", "arch": ["arm64"] },
       { "target": "zip", "arch": ["arm64"] }
@@ -24,6 +21,7 @@
     "identity": null
   },
   "win": {
+    "icon": "build/icon.png",
     "target": [
       { "target": "zip", "arch": ["x64"] }
     ]

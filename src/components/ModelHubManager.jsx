@@ -1,322 +1,248 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Folder, FolderOpen, RefreshCw, Download, ChevronDown, 
-  CheckCircle2, Loader2, Cpu, AlertTriangle, ExternalLink, 
-  Sparkles, BookOpen, ShieldAlert, HardDrive 
+  Server, Cpu, RefreshCw, AlertCircle, CheckCircle2, 
+  ExternalLink, Sparkles, Download, ArrowRight, ShieldAlert 
 } from 'lucide-react';
 import './ModelHubManager.css';
 
-export default function ModelHubManager({ onModelLoaded }) {
-  const [desktopStatus, setDesktopStatus] = useState(null);
-  const [selectedModel, setSelectedModel] = useState('Llama-3.2-3B-Instruct-Q4_K_M.gguf');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showGuideModal, setShowGuideModal] = useState(false);
-  const dropdownRef = useRef(null);
+const HUB_BASE_URL = 'http://127.0.0.1:51123';
 
-  const refreshStatus = async () => {
-    if (window.electronAPI?.getModelsStatus) {
-      try {
-        const status = await window.electronAPI.getModelsStatus();
-        setDesktopStatus(status);
-        if (status.currentLoadedModel) {
-          setSelectedModel(status.currentLoadedModel);
-        }
-      } catch (e) {
-        console.error('refreshStatus error:', e);
+export const HUB_MODELS = [
+  {
+    id: 'gemma-4-E2B-it-Q4_K_M.gguf',
+    name: 'Gemma 4 E2B (Google DeepMind)',
+    size: '1.6 GB',
+    tag: '極速敏捷 · 耗電極低',
+    isDefault: false,
+    desc: 'Google 最新旗艦輕量架構，體積極小（僅 1.6GB）秒級加載，日常對話重點萃取敏捷流暢。'
+  },
+  {
+    id: 'Llama-3.2-3B-Instruct-Q4_K_M.gguf',
+    name: 'Llama 3.2 (3B) Instruct (Meta)',
+    size: '2.0 GB',
+    tag: '預設推薦 · 格式嚴謹',
+    isDefault: true,
+    desc: 'Meta 官方輕量模型，排版格式規範嚴謹、指令遵循度高，家長對話紀錄轉化最穩定。'
+  }
+];
+
+export default function ModelHubManager({ selectedModel, onSelectModel, onModelReady }) {
+  const [hubOnline, setHubOnline] = useState(null); // null (checking) | true | false
+  const [modelState, setModelState] = useState(null); // 'checking' | 'ready' | 'not_downloaded' | 'error'
+  const [modelMessage, setModelMessage] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
+  const [serverInfo, setServerInfo] = useState(null);
+
+  const currentModelId = selectedModel || HUB_MODELS[1].id; // 預設使用 Llama-3.2-3B
+
+  // 1. 檢查 Hub 服務狀態
+  const checkHubStatus = async () => {
+    setIsChecking(true);
+    try {
+      const res = await fetch(`${HUB_BASE_URL}/api/status`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(3000)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setHubOnline(true);
+        setServerInfo(data);
+        await ensureModel(currentModelId);
+      } else {
+        setHubOnline(false);
+        setModelState('error');
+        if (onModelReady) onModelReady({ ready: false });
       }
+    } catch (e) {
+      setHubOnline(false);
+      setModelState('error');
+      if (onModelReady) onModelReady({ ready: false });
+    } finally {
+      setIsChecking(false);
     }
+  };
+
+  // 2. 向 Hub 確認指定模型
+  const ensureModel = async (modelId) => {
+    setModelState('checking');
+    try {
+      const res = await fetch(`${HUB_BASE_URL}/api/ensure-model`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ modelId, autoLoad: true })
+      });
+      const data = await res.json();
+
+      if (data.exists === false) {
+        setModelState('not_downloaded');
+        setModelMessage(data.message || `模型 [${modelId}] 尚未下載。Model Hub 已自動彈出下載確認視窗，請於 Model Hub 中確認下載。`);
+        if (onModelReady) onModelReady({ ready: false, modelId });
+      } else if (data.ready) {
+        setModelState('ready');
+        setModelMessage(`模型 [${modelId}] 已於本機 GPU 載入就緒！`);
+        if (onModelReady) onModelReady({ ready: true, modelId, modelInfo: data.model });
+      } else {
+        setModelState('error');
+        setModelMessage(data.error || '模型載入失敗，請至 Model Hub 檢查記憶體狀態');
+        if (onModelReady) onModelReady({ ready: false, modelId });
+      }
+    } catch (err) {
+      setModelState('error');
+      setModelMessage('無法與 Model Hub 通訊：' + err.message);
+      if (onModelReady) onModelReady({ ready: false, modelId });
+    }
+  };
+
+  // 3. 喚醒或開啟 Model Hub
+  const handleLaunchHub = async () => {
+    if (window.electronAPI?.launchHub) {
+      await window.electronAPI.launchHub();
+    } else {
+      window.open('antigravity-hub://launch', '_self');
+    }
+    // 稍微延遲後自動重新檢測
+    setTimeout(checkHubStatus, 2500);
   };
 
   useEffect(() => {
-    refreshStatus();
-  }, []);
-
-  const handleSelectDir = async () => {
-    const res = await window.electronAPI?.selectModelDir();
-    if (res?.success) refreshStatus();
-  };
-
-  const handleOpenDir = async () => {
-    await window.electronAPI?.openModelDir(desktopStatus?.effectiveModelDir);
-  };
-
-  const handleOpenExternal = (url) => {
-    if (window.electronAPI?.openExternal) {
-      window.electronAPI.openExternal(url);
-    } else {
-      window.open(url, '_blank');
-    }
-  };
-
-  const handleLoadModel = async () => {
-    const allModels = [...(desktopStatus?.models || []), ...(desktopStatus?.customModels || [])];
-    const target = allModels.find(m => m.id === selectedModel);
-    
-    if (!target?.isAvailable) {
-      setShowGuideModal(true);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const res = await window.electronAPI.loadModel(selectedModel);
-      if (res.success) {
-        await refreshStatus();
-        if (onModelLoaded) onModelLoaded(res);
-      } else {
-        alert("模型載入失敗：" + res.error);
-      }
-    } catch (e) {
-      alert("載入出錯：" + e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const predefinedModels = desktopStatus?.models || [];
-  const customModels = desktopStatus?.customModels || [];
-  const allModels = [...predefinedModels, ...customModels];
-  const currentObj = allModels.find(m => m.id === selectedModel) || predefinedModels[0] || {};
+    checkHubStatus();
+  }, [currentModelId]);
 
   return (
-    <div className="model-hub-container">
-      {/* 1. 本機共享模型庫管理列 */}
-      <div className="model-hub-bar">
-        <div className="model-dir-info">
-          <Folder size={16} color="#2563eb" />
-          <span>
-            <b>本機共享模型庫：</b>
-            <code>{desktopStatus?.effectiveModelDir || '~/Models'}</code>
+    <div className="hub-connector-card">
+      {/* 伺服器狀態條 */}
+      <div className="hub-status-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Server size={18} color={hubOnline ? '#10B981' : '#9CA3AF'} />
+          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#374151' }}>Antigravity Model Hub</span>
+          <span className={`status-pill ${hubOnline ? 'online' : 'offline'}`}>
+            {hubOnline ? '🟢 已連線 (127.0.0.1:51123)' : '⚪ 未連線'}
           </span>
+          {serverInfo?.gpuEngine && (
+            <span style={{ fontSize: '0.75rem', background: '#F3F4F6', color: '#4B5563', padding: '0.15rem 0.5rem', borderRadius: '4px' }}>
+              ⚡ {serverInfo.gpuEngine}
+            </span>
+          )}
         </div>
-        <div className="model-hub-actions">
-          <button className="hub-btn secondary" onClick={handleOpenDir} title="在 Finder 中打開此資料夾">
-            <FolderOpen size={14} /> 在 Finder 打開
-          </button>
-          <button className="hub-btn secondary" onClick={handleSelectDir} title="變更模型存放資料夾">
-            <Folder size={14} /> 變更資料夾
-          </button>
-          <button className="hub-btn secondary" onClick={refreshStatus} title="重新整理掃描">
-            <RefreshCw size={14} /> 重新整理
-          </button>
-          <button className="hub-btn primary" onClick={() => setShowGuideModal(true)}>
-            <Download size={14} /> 模型下載指引與社群擴充
+        <div>
+          <button 
+            type="button" 
+            onClick={checkHubStatus} 
+            disabled={isChecking}
+            className="hub-icon-btn" 
+            title="重新整理連線狀態"
+          >
+            <RefreshCw size={14} className={isChecking ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
-      {/* 2. 尚未放入模型時的提醒卡片 */}
-      {!desktopStatus?.hasAnyModel && (
-        <div className="hub-alert warning">
-          <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <b>💡 尚未偵測到離線模型！本系統為輕量化版本</b>
-            <p>
-              請點擊上方<b>【模型下載指引與社群擴充】</b>取得模型（預設推薦 <b>Meta Llama 3.2 3B</b>，體積僅 2.0GB），下載完成後放入上述模型庫資料夾即可秒速啟用。所有 Antigravity 本地工具均可統一共享使用！
+      {/* 若未連線提示開啟 Hub */}
+      {hubOnline === false && (
+        <div className="hub-warn-card">
+          <AlertCircle size={20} color="#D97706" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ flex: 1, fontSize: '0.85rem' }}>
+            <p style={{ fontWeight: 700, color: '#92400E', margin: '0 0 0.35rem 0' }}>未偵測到本機模型管理系統正在運行</p>
+            <p style={{ color: '#B45309', margin: '0 0 0.75rem 0', lineHeight: 1.5 }}>
+              本專案直接串接本機「Antigravity Model Hub」進行高效率推論。請確認已開啟 <b>Antigravity Model Hub.app</b>，或點擊下方按鈕進行自動喚醒：
             </p>
+            <button 
+              type="button" 
+              onClick={handleLaunchHub} 
+              className="hub-action-btn"
+            >
+              <ExternalLink size={14} /> 開啟 / 喚醒 Antigravity Model Hub
+            </button>
           </div>
         </div>
       )}
 
-      {/* 3. 模型選擇下拉列與載入按鈕 */}
-      <div className="model-select-row">
-        <div className="model-custom-select" ref={dropdownRef}>
-          <div className="select-trigger" onClick={() => !isLoading && setIsDropdownOpen(!isDropdownOpen)}>
-            <div className="trigger-content">
-              <span className="model-title">{currentObj.name || selectedModel}</span>
-              <span className={`tag-badge ${currentObj.isDefault ? 'default' : ''}`}>
-                {currentObj.tag || '本地模型'}
-              </span>
-              <span className={`status-badge ${currentObj.isAvailable ? 'available' : 'unavailable'}`}>
-                {currentObj.isAvailable ? `🟢 就緒 (${currentObj.size})` : '⚪ 尚未下載'}
-              </span>
-            </div>
-            <ChevronDown size={18} color="#6b7280" />
-          </div>
-
-          {isDropdownOpen && (
-            <div className="select-menu">
-              <div className="menu-group-header">官方主流推薦模型</div>
-              {predefinedModels.map(m => (
+      {/* 模型切換與狀態展示 */}
+      {hubOnline && (
+        <div style={{ marginTop: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+            選擇目標推論模型（由 Model Hub 統一管理與硬體加速）
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+            {HUB_MODELS.map((m) => {
+              const isSelected = m.id === currentModelId;
+              return (
                 <div 
-                  key={m.id} 
-                  className={`menu-option ${selectedModel === m.id ? 'active' : ''}`}
-                  onClick={() => { setSelectedModel(m.id); setIsDropdownOpen(false); }}
+                  key={m.id}
+                  onClick={() => onSelectModel && onSelectModel(m.id)}
+                  className={`model-option-card ${isSelected ? 'selected' : ''}`}
                 >
-                  <div className="option-top">
-                    <span className="option-name">{m.isDefault ? '⭐️ ' : ''}{m.name} - {m.size}</span>
-                    <span className={`status-pill ${m.isAvailable ? 'online' : 'offline'}`}>
-                      {m.isAvailable ? '🟢 已就緒' : '⚪ 尚未下載'}
-                    </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1F2937' }}>{m.name}</span>
+                    <span style={{ fontSize: '0.75rem', background: isSelected ? '#DBEAFE' : '#F3F4F6', color: isSelected ? '#1E40AF' : '#4B5563', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>{m.size}</span>
                   </div>
-                  <div className="option-desc">
-                    <div className="pros-text">{m.pros}</div>
-                    <div className="cons-text">{m.cons}</div>
-                  </div>
+                  <div style={{ fontSize: '0.75rem', color: isSelected ? '#2563EB' : '#10B981', fontWeight: 600, marginBottom: '0.25rem' }}>{m.tag}</div>
+                  <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0, lineHeight: 1.4 }}>{m.desc}</p>
                 </div>
-              ))}
-
-              {customModels.length > 0 && (
-                <>
-                  <div className="menu-group-header">Hugging Face / 社群自訂微調模型 ({customModels.length} 個)</div>
-                  {customModels.map(m => (
-                    <div 
-                      key={m.id} 
-                      className={`menu-option ${selectedModel === m.id ? 'active' : ''}`}
-                      onClick={() => { setSelectedModel(m.id); setIsDropdownOpen(false); }}
-                    >
-                      <div className="option-top">
-                        <span className="option-name">🧩 {m.name}</span>
-                        <span className="status-pill online">🟢 {m.size}</span>
-                      </div>
-                      <div className="option-desc path">{m.path}</div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
-        <button 
-          className={`load-btn ${desktopStatus?.currentLoadedModel === selectedModel ? 'ready' : ''}`}
-          onClick={handleLoadModel}
-          disabled={isLoading}
-        >
-          {desktopStatus?.currentLoadedModel === selectedModel ? (
-            <><CheckCircle2 size={16}/> 模型已就緒 ({desktopStatus?.gpuEngine?.toUpperCase() || 'GPU'} 加速)</>
-          ) : isLoading ? (
-            <><Loader2 className="spin" size={16}/> 載入中...</>
-          ) : !currentObj.isAvailable ? (
-            <><Download size={16}/> 下載指引</>
-          ) : (
-            <><Cpu size={16}/> 載入離線模型</>
-          )}
-        </button>
-      </div>
-
-      {/* 4. 模型下載與 Hugging Face 社群擴充 Modal */}
-      {showGuideModal && (
-        <div className="hub-modal-overlay" onClick={() => setShowGuideModal(false)}>
-          <div className="hub-modal-card" onClick={e => e.stopPropagation()}>
-            <div className="hub-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <HardDrive size={20} color="#2563eb" />
-                <h3>本機共享模型庫配置與下載指引</h3>
-              </div>
-              <button className="hub-close-btn" onClick={() => setShowGuideModal(false)}>×</button>
-            </div>
-
-            <div className="hub-modal-body">
-              {/* 核心說明 */}
-              <div className="modal-info-box">
-                <div className="info-title"><FolderOpen size={16} /> 統一模型庫架構說明（所有軟體共用）</div>
-                <p>
-                  本軟體為<b>無模型輕量化版本</b>（約 80~180 MB）。未來您所有的 Antigravity 本地 AI 工具皆共用此資料夾，一次下載即可在所有桌面軟體中調度，免重複佔用硬碟空間。
-                </p>
-                <div className="dir-display-bar">
-                  <div><b>目前路徑：</b><code>{desktopStatus?.effectiveModelDir || '~/Models'}</code></div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="hub-btn secondary" onClick={handleOpenDir}><FolderOpen size={13}/> 在 Finder 打開</button>
-                    <button className="hub-btn secondary" onClick={handleSelectDir}><Folder size={13}/> 變更資料夾</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* 主流模型下載卡片 */}
-              <div>
-                <h4 className="section-title"><Sparkles size={16} color="#f59e0b" /> 主流推薦模型（點擊直達 Hugging Face 下載）</h4>
-                <div className="model-cards-grid">
-                  {/* Llama 3.2 3B */}
-                  <div className="model-card featured">
-                    <div className="card-header">
-                      <div>
-                        <div className="card-name">⭐️ Meta Llama 3.2 (3B) Instruct</div>
-                        <div className="card-spec">Meta 出品 · 4-bit 量化 (Q4_K_M) · 檔案約 2.0 GB · 記憶體需 8GB</div>
-                      </div>
-                      <div className="card-actions">
-                        <button 
-                          className="hub-btn primary"
-                          onClick={() => handleOpenExternal('https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf?download=true')}
-                        >
-                          <Download size={13} /> 下載 .gguf (2.0 GB)
-                        </button>
-                        <button className="hub-btn secondary" onClick={() => handleOpenExternal('https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF')}>
-                          <ExternalLink size={13} /> 模型卡
-                        </button>
-                      </div>
-                    </div>
-                    <div className="pros-cons-box">
-                      <div className="pro-item"><b>優點：</b> 體積僅 2.0GB 秒級下載；推論秒級響應（Apple Silicon 每秒 40+ 字）；低發熱省電；日常生活與任務最穩定精準。</div>
-                      <div className="con-item"><b>限制：</b> 3B 規模較小，針對極複雜文學長句或深奧哲理修辭發揮略有限度。</div>
-                    </div>
-                  </div>
-
-                  {/* Gemma 4 E4B */}
-                  <div className="model-card">
-                    <div className="card-header">
-                      <div>
-                        <div className="card-name">✨ Google Gemma 4 (E4B) Instruct</div>
-                        <div className="card-spec">Google DeepMind · 4-bit 量化 (Q4_K_M) · 檔案約 5.0 GB · 建議 8GB~16GB 記憶體</div>
-                      </div>
-                      <div className="card-actions">
-                        <button 
-                          className="hub-btn primary purple"
-                          onClick={() => handleOpenExternal('https://huggingface.co/bartowski/google_gemma-4-E4B-it-GGUF/resolve/main/google_gemma-4-E4B-it-Q4_K_M.gguf?download=true')}
-                        >
-                          <Download size={13} /> 下載 .gguf (5.0 GB)
-                        </button>
-                        <button className="hub-btn secondary" onClick={() => handleOpenExternal('https://huggingface.co/models?search=gemma-4-E4B+gguf')}>
-                          <ExternalLink size={13} /> 探索版本
-                        </button>
-                      </div>
-                    </div>
-                    <div className="pros-cons-box">
-                      <div className="pro-item"><b>優點：</b> Google 旗艦架構；詞彙豐富靈動文采佳；具備 128K 超長脈絡，能消化大量複雜背景資料。</div>
-                      <div className="con-item"><b>限制：</b> 檔案較大（約 5.0GB）下載需時；記憶體建議 8GB~16GB 以上；速度略慢於 3B。</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Hugging Face 社群微調探索 */}
-              <div className="modal-info-box">
-                <div className="info-title" style={{ justifyContent: 'space-between' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><BookOpen size={16} color="#059669" /> 探索 Hugging Face 社群微調模型（支援自動辨識）</span>
-                  <button className="hub-btn secondary sm" onClick={() => handleOpenExternal('https://huggingface.co/models?search=gguf+traditional+chinese')}>
-                    <ExternalLink size={12} /> 前往 Hugging Face GGUF 模型庫
-                  </button>
-                </div>
-                <p>
-                  <a href="https://huggingface.co" onClick={(e) => { e.preventDefault(); handleOpenExternal('https://huggingface.co'); }} style={{ color: '#2563eb', fontWeight: 600 }}>
-                    Hugging Face (https://huggingface.co)
-                  </a> 是全球最大開源 AI 平台。本軟體支援<b>動態模型掃描</b>，只要下載相容的 <code>.gguf</code> 檔案並放進共享資料夾，軟體啟動時就會自動列入下拉選單供您直接調度！
-                </p>
-                <div className="keywords-hint">
-                  <b>💡 推薦搜尋關鍵字：</b>
-                  <span className="kw-pill">Taiwan-LLM GGUF</span>
-                  <span className="kw-pill">Breeze GGUF</span>
-                  <span className="kw-pill">Traditional Chinese GGUF</span>
-                </div>
-              </div>
-
-              {/* 風險提示 */}
-              <div className="risk-warning-box">
-                <div className="risk-title"><ShieldAlert size={16} color="#b91c1c" /> ⚠️ 第三方與社群微調模型重要使用風險須知</div>
-                <ul>
-                  <li><b>格式限制：</b> 引擎專為 <code>GGUF</code> 格式設計，請務必下載檔名結尾為 <code>.gguf</code> 的檔案（建議選 <code>Q4_K_M</code> 量化版本）。其他格式如 <code>.safetensors</code> 或 <code>.bin</code> 將無法載入。</li>
-                  <li><b>記憶體與閃退風險：</b> 一般個人電腦強烈建議挑選 <b>3B ~ 8B</b> 規模；若嘗試載入 14B、32B 或 70B 等超大模型，可能導致系統記憶體耗盡、介面嚴重卡頓或程式直接崩潰。</li>
-                  <li><b>內容安全與幻覺風險：</b> 社群微調模型多由個人上傳，品質與對齊程度不一。非官方微調模型可能含有未過濾之偏見、邏輯錯誤或生成虛構事實（幻覺），建議優先挑選高下載量與口碑良好的知名創作者版本。</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="hub-modal-footer">
-              <button className="hub-btn secondary" onClick={refreshStatus}><RefreshCw size={14}/> 重新掃描模型庫</button>
-              <button className="hub-btn primary" onClick={() => setShowGuideModal(false)}>關閉指引</button>
-            </div>
+              );
+            })}
           </div>
+
+          {/* 模型狀態回饋 */}
+          {modelState === 'checking' && (
+            <div className="hub-note-badge checking">
+              <RefreshCw size={14} className="animate-spin" color="#4F46E5" />
+              <span>正在向 Model Hub 確認 <b>{currentModelId}</b> 載入狀態...</span>
+            </div>
+          )}
+
+          {modelState === 'not_downloaded' && (
+            <div className="hub-warn-card info">
+              <Download size={20} color="#2563EB" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ flex: 1, fontSize: '0.85rem' }}>
+                <p style={{ fontWeight: 700, color: '#1E40AF', margin: '0 0 0.25rem 0' }}>模型尚未下載</p>
+                <p style={{ color: '#1D4ED8', margin: '0 0 0.5rem 0', lineHeight: 1.5 }}>
+                  Model Hub 已在螢幕上彈出下載確認視窗！請前往確認下載完成後，點擊下方按鈕以就緒。
+                </p>
+                <button 
+                  type="button" 
+                  onClick={() => ensureModel(currentModelId)} 
+                  className="hub-btn-blue"
+                >
+                  <RefreshCw size={13} /> 檢查下載進度並啟動
+                </button>
+              </div>
+            </div>
+          )}
+
+          {modelState === 'ready' && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <div className="hub-note-badge ready">
+                <CheckCircle2 size={16} color="#059669" />
+                <span style={{ fontWeight: 600, color: '#065F46' }}>
+                  模型已於本機 GPU 載入就緒！
+                </span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => {
+                  const confirmed = window.confirm("⚠️ 注意：離線模型處理效能有限，彙整資訊與原意可能有差異，請反覆確認才做使用。強烈建議以「雲端API模式」為優先使用。\n\n您確定要繼續使用本機模型嗎？");
+                  if (confirmed && onModelReady) {
+                    onModelReady({ ready: true, modelId: currentModelId, proceed: true });
+                  }
+                }}
+                className="hub-btn-proceed"
+              >
+                <span>確認啟用此模型並開始記錄轉換</span>
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
+
+          {modelState === 'error' && (
+            <div className="hub-warn-card error">
+              <AlertCircle size={20} color="#DC2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ flex: 1, fontSize: '0.85rem' }}>
+                <p style={{ fontWeight: 700, color: '#991B1B', margin: '0 0 0.25rem 0' }}>連線或載入異常</p>
+                <p style={{ color: '#B91C1C', margin: 0 }}>{modelMessage}</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

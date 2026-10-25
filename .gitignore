@@ -29,3 +29,5 @@ desktop/models/
 desktop/.cache/
 dist-desktop/
 release/
+build/icon.iconset/
+

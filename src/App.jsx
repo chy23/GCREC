@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter, Cpu, CloudLightning } from 'lucide-react';
 import './index.css';
-import ModelHubManager from './components/ModelHubManager';
+import ModelHubManager, { HUB_MODELS } from './components/ModelHubManager';
 
 import CHANGELOG from './changelog.json';
 
@@ -203,20 +203,21 @@ function App() {
   const [mlcEngine, setMlcEngine] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
-  const [selectedLocalModel, setSelectedLocalModel] = useState(LOCAL_MODELS[0].id);
+  const [selectedLocalModel, setSelectedLocalModel] = useState(HUB_MODELS[1].id);
   const [loadedModelName, setLoadedModelName] = useState('');
   const [desktopInfo, setDesktopInfo] = useState(null);
   const localModels = LOCAL_MODELS;
 
   useEffect(() => {
-    if (!desktopAPI) return;
-    if (desktopAPI.getModelsStatus) {
-      desktopAPI.getModelsStatus().then((status) => {
-        if (status?.currentLoadedModel) {
-          setLoadedModelName(status.currentLoadedModel);
+    // 預先檢查 Antigravity Model Hub 狀態
+    fetch('http://127.0.0.1:51123/api/status', { method: 'GET', signal: AbortSignal.timeout(2000) })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.currentLoadedModel) {
+          setLoadedModelName(data.currentLoadedModel);
         }
-      }).catch((err) => console.error('讀取本機模型狀態失敗：', err));
-    }
+      })
+      .catch(() => {});
   }, []);
 
   const initDesktopModel = async () => {
@@ -372,7 +373,7 @@ function App() {
       alert("請先輸入 Gemini API Key");
       return;
     }
-    if (engineMode === 'local' && !desktopAPI?.generateAi && !mlcEngine) {
+    if (engineMode === 'local' && !desktopAPI && !mlcEngine && !loadedModelName) {
       alert("本地端模型尚未準備完成");
       return;
     }
@@ -493,23 +494,63 @@ function App() {
             
             const promptContent = `請分析以下對話紀錄：\n\n<對話紀錄>\n${chunks[i]}\n</對話紀錄>\n\n==========\n【極度重要】請嚴格依據上述 <對話紀錄> 內的內容，提取出重要輔導事件。請完全依照以下結構填寫，並將小括號 ( ) 內的提示文字【替換為對話中的真實資料】，絕對不可以照抄括號與提示字！也請維持乾淨的純文字，不要加上任何 Markdown 星號或【】括號：\n\n紀錄 (此處不需編號，請固定輸出「紀錄」二字即可)\n訪談方式：通訊軟體\n訪談對象：(此處填寫家長真實名稱，如 王大明媽媽)\n訪談日期：(此處填寫對話日期，如 2026/04/13)\n輔導內容要點：(請濃縮為 10 字以內的事件主旨，例如：作業未交、學習狀況、人際衝突)\n聯絡事項：\n　事件紀錄：(客觀陳述具體事件)\n　家長回應：(若對話中家長無實質回應，請務必填寫「此段事件於對話紀錄中無家長當日之回覆」)\n\n【重要過濾規則】：\n1. 絕對不可以直接複製貼上原始對話！\n2. 嚴格過濾無效紀錄：若對話內容僅為單純的「日常問候」、「純請假」、「接送交代」、「物品轉交/提醒帶東西(例如交代放補習班)」、「交代行政庶務」，這些都【不屬於】輔導事件，請直接回覆空白，絕對不要輸出任何紀錄！只有涉及學生學習狀況、行為常規、人際衝突或身心健康的討論，才需要被記錄。\n3. 若同一天內發生的同一個主題對話（例如針對同一個問題來回討論），請務必整合成「單一筆」紀錄，絕對不可以將同一個事件拆分成多筆！`;
 
-            if (desktopAPI?.generateAi) {
-              const unsubscribe = desktopAPI.onChunk((text) => {
-                fullResult += text;
-                let counter = 1;
-                const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
-                  const prefix = match.startsWith('\n') ? '\n' : '';
-                  return `${prefix}紀錄 ${counter++}\n`;
-                });
-                setResult(displayResult);
+            // 1. 優先嘗試透過 Antigravity Model Hub (http://127.0.0.1:51123) 進行本機推論
+            let usedModelHub = false;
+            try {
+              const statusRes = await fetch('http://127.0.0.1:51123/api/status', {
+                method: 'GET',
+                signal: AbortSignal.timeout(3000)
               });
-
-              try {
-                const res = await desktopAPI.generateAi({ prompt: promptContent });
-                if (!res.success) throw new Error(res.error || "本機生成失敗");
-              } finally {
-                unsubscribe();
+              if (statusRes.ok) {
+                usedModelHub = true;
               }
+            } catch (e) {
+              if (desktopAPI?.launchHub) {
+                desktopAPI.launchHub();
+              }
+              if (!mlcEngine) {
+                throw new Error("無法連線至 Antigravity Model Hub (http://127.0.0.1:51123)！請開啟「Antigravity Model Hub.app」後重試。");
+              }
+            }
+
+            if (usedModelHub) {
+              // 2. 確認指定模型是否已下載與載入
+              setChunkProgress(`正在向 Model Hub 確認 ${selectedLocalModel} 載入狀態...`);
+              const ensureRes = await fetch('http://127.0.0.1:51123/api/ensure-model', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modelId: selectedLocalModel, autoLoad: true })
+              });
+              const ensureData = await ensureRes.json();
+              if (ensureData.exists === false) {
+                throw new Error(`模型 [${selectedLocalModel}] 尚未下載。Model Hub 已自動彈出下載確認視窗，請於 Model Hub 確認下載後再試。`);
+              }
+              if (!ensureData.ready) {
+                throw new Error(`模型載入失敗：${ensureData.error || '請至 Model Hub 檢查記憶體與模型狀態'}`);
+              }
+
+              // 3. 調用推論 POST http://127.0.0.1:51123/api/generate
+              setChunkProgress(`處理進度: ${i+1} / ${chunks.length} (Model Hub 推論中...)`);
+              const genRes = await fetch('http://127.0.0.1:51123/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  prompt: promptContent,
+                  modelId: selectedLocalModel
+                })
+              });
+              const genData = await genRes.json();
+              if (!genData.success) {
+                throw new Error(genData.error || "Model Hub 本機推論失敗");
+              }
+              const text = genData.text || "";
+              fullResult += text;
+              let counter = 1;
+              const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
+                const prefix = match.startsWith('\n') ? '\n' : '';
+                return `${prefix}紀錄 ${counter++}\n`;
+              });
+              setResult(displayResult);
             } else if (mlcEngine) {
               const stream = await mlcEngine.chat.completions.create({
                 messages: [
@@ -517,13 +558,12 @@ function App() {
                   { role: "user", content: promptContent }
                 ],
                 temperature: 0.1,
-                stream: true, // 開啟串流模式
+                stream: true,
               });
               
               for await (const chunk of stream) {
                 const text = chunk.choices[0]?.delta?.content || "";
                 fullResult += text;
-                // 讓畫面即時顯示最新生成的字元，並透過正則表達式動態跨區塊重新編號
                 let counter = 1;
                 const displayResult = fullResult.replace(/(?:^|\n)(?:紀錄\s*\d*|\d+)\s*\n(?=訪談方式[：:])/g, (match) => {
                   const prefix = match.startsWith('\n') ? '\n' : '';
@@ -676,21 +716,30 @@ function App() {
                   className="engine-option-card"
                   style={{ border: '1px solid #E5E7EB', borderRadius: '12px', padding: '1.5rem', background: 'rgba(255,255,255,0.95)' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.35rem' }}>
                     <Cpu size={24} color="#10B981" />
                     <h4 style={{ margin: 0, fontSize: '1.1rem' }}>
                       本機離線模式 
                       <span style={{ fontSize: '0.8rem', background: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '4px', marginLeft: '0.5rem' }}>
-                        桌面共享模型庫 · 硬體加速
+                        Antigravity Model Hub 跨專案中樞
                       </span>
                     </h4>
                   </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 0.5rem 0', lineHeight: 1.5 }}>
+                    本專案不自行打包或管理 AI 模型，直接串接電腦中已安裝的「Antigravity Model Hub」進行高效率推論與 GPU 加速。
+                  </p>
                   
-                  <ModelHubManager onModelLoaded={(res) => {
-                    setEngineMode('local');
-                    setIsApiKeySet(true);
-                    setLoadedModelName(res?.model?.name || res?.model?.id || '本機離線模型');
-                  }} />
+                  <ModelHubManager 
+                    selectedModel={selectedLocalModel}
+                    onSelectModel={(id) => setSelectedLocalModel(id)}
+                    onModelReady={({ ready, modelId, proceed }) => {
+                      if (ready && proceed) {
+                        setEngineMode('local');
+                        setIsApiKeySet(true);
+                        setLoadedModelName(modelId);
+                      }
+                    }} 
+                  />
                 </div>
               ) : (
                 <div 
