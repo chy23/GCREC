@@ -1,5 +1,12 @@
 [
   {
+    "version": "v-fdda7d1",
+    "date": "2026-10-26",
+    "title": "Feat: 串接 Antigravity Model Hub (127.0.0.1:51123) 本機中樞推論，移除本機模型打包，並建立專屬原生 macOS 圖標",
+    "details": "常規系統更新或效能優化",
+    "bugs": "無"
+  },
+  {
     "version": "v-a46b95b",
     "date": "2026-10-25",
     "title": "Feat: 導入解耦本機共享模型庫 (~/Models) 與原生推論加速架構",
@@ -341,12 +348,5 @@
     "title": "Fix: 解決本機模型 Context Window 報錯，將引擎 context_window_size 放寬至 8192，並將分塊大小從 150 行大幅縮減至 40 行確保穩定性",
     "details": "常規系統更新或效能優化",
     "bugs": "系統修正：Fix: 解決本機模型 Context Window 報錯，將引擎 context_window_size 放寬至 8192，並將分塊大小從 150 行大幅縮減至 40 行確保穩定性"
-  },
-  {
-    "version": "v-4cf9f22",
-    "date": "2026-08-16",
-    "title": "UX: 將 WebLLM 底層英文載入進度訊息中文化，提升在地化使用者體驗",
-    "details": "常規系統更新或效能優化",
-    "bugs": "無"
   }
 ]

@@ -39,12 +39,14 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 0.35rem 0.5rem;
+  padding: 0.4rem 0.65rem;
   color: #4b5563;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 500;
   transition: all 0.15s;
 }
 .hub-icon-btn:hover {
@@ -60,15 +62,10 @@
   background: #fffbeb;
   border: 1px solid #fef3c7;
   border-radius: 8px;
-  margin-top: 0.5rem;
 }
 .hub-warn-card.info {
   background: #eff6ff;
   border: 1px solid #dbeafe;
-}
-.hub-warn-card.error {
-  background: #fef2f2;
-  border: 1px solid #fee2e2;
 }
 
 .hub-action-btn {
@@ -87,6 +84,46 @@
 }
 .hub-action-btn:hover {
   background: #b45309;
+}
+
+.model-select-dropdown {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1.5px solid #d1d5db;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1f2937;
+  background-color: #fafafa;
+  outline: none;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.model-select-dropdown:focus {
+  border-color: #3b82f6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.model-detail-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.hub-note-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+.hub-note-badge.ready {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
 }
 
 .hub-btn-proceed {
@@ -109,42 +146,4 @@
 }
 .hub-btn-proceed:hover {
   background: #059669;
-}
-
-
-.model-option-card {
-  padding: 0.85rem;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.model-option-card:hover {
-  border-color: #cbd5e1;
-  background: #ffffff;
-}
-.model-option-card.selected {
-  border-color: #4f46e5;
-  background: #eef2ff;
-  box-shadow: 0 0 0 1px #4f46e5;
-}
-
-.hub-note-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  margin-top: 0.5rem;
-}
-.hub-note-badge.checking {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  color: #4b5563;
-}
-.hub-note-badge.ready {
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
 }

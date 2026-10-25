@@ -49,9 +49,32 @@ body {
   }
 }
 
+/* macOS 原生可拖移視窗區域 (相容 titleBarStyle: hiddenInset) */
+.window-drag-region {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  -webkit-app-region: drag;
+  z-index: 9999;
+  pointer-events: auto;
+}
+
 .header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
+  padding-top: 0.8rem;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+
+.header * {
+  -webkit-app-region: no-drag;
+}
+
+.header h1, .header p {
+  -webkit-app-region: drag;
 }
 
 .header h1 {

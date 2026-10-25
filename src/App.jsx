@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
 import { UploadCloud, FileText, Check, Copy, AlertCircle, Settings, History, X, Inbox, Highlighter, Cpu, CloudLightning } from 'lucide-react';
 import './index.css';
-import ModelHubManager, { HUB_MODELS } from './components/ModelHubManager';
+import ModelHubManager, { CORE_MODELS } from './components/ModelHubManager';
 
 import CHANGELOG from './changelog.json';
 
@@ -203,7 +203,7 @@ function App() {
   const [mlcEngine, setMlcEngine] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState('');
   const [isModelLoading, setIsModelLoading] = useState(false);
-  const [selectedLocalModel, setSelectedLocalModel] = useState(HUB_MODELS[1].id);
+  const [selectedLocalModel, setSelectedLocalModel] = useState(CORE_MODELS[1].id);
   const [loadedModelName, setLoadedModelName] = useState('');
   const [desktopInfo, setDesktopInfo] = useState(null);
   const localModels = LOCAL_MODELS;
@@ -662,8 +662,10 @@ function App() {
 
   return (
     <div className="app-container">
+      {/* 頂部原生可拖曳視窗區域 */}
+      <div className="window-drag-region" />
       <div className="header" style={{ position: 'relative' }}>
-        <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '1rem' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: '1rem', WebkitAppRegion: 'no-drag' }}>
           <button 
             onClick={() => setShowSettings(true)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)' }}
