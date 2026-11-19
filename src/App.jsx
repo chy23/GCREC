@@ -605,20 +605,20 @@ function App() {
       } else {
         const modelsToTry = [
           'gemini-3.8-flash',
-          'gemini-3.7-flash',
-          'gemini-3.6-flash',
+          'gemini-4-hydrogen',
           'gemini-4-argon',
-          'gemini-3.1-pro-preview'
+          'gemini-4-neon',
+          'gemini-4-carbon'
         ];
 
         for (const model of modelsToTry) {
           try {
-            if (model === 'gemini-4-argon') {
-              const confirmArgon = window.confirm(
-                "【備援模型切換確認】\n前述模型未能成功回應。\n即將調用最新高階備援模型「gemini-4-argon」進行處理。\n\n是否確認調用此模型繼續進行？\n（若點擊「取消」，系統將自動跳過並嘗試下一個備援模型）"
+            if (model.startsWith('gemini-4')) {
+              const confirmModel = window.confirm(
+                `【備援模型切換確認】\n前述模型未能成功回應。\n即將調用高階旗艦備援模型「${model}」進行處理。\n\n是否確認調用此模型繼續進行？\n（若點擊「取消」，系統將自動跳過並嘗試下一個備援模型）`
               );
-              if (!confirmArgon) {
-                console.log("使用者取消調用 gemini-4-argon，跳過嘗試此模型");
+              if (!confirmModel) {
+                console.log(`使用者取消調用 ${model}，跳過嘗試此模型`);
                 continue;
               }
             }
@@ -724,7 +724,7 @@ function App() {
                   <br/>
                   <span style={{color: '#4F46E5', fontWeight: 600}}>📊 處理容量：</span>最高支援單次上傳 100 萬字以上 (適合極大量且需瞬間完成的任務)
                   <br/>
-                  <span style={{color: '#6366F1', fontWeight: 600}}>🔄 自動備援階層：</span>gemini-3.8-flash ➔ gemini-3.7-flash ➔ gemini-3.6-flash ➔ gemini-4-argon (調用前確認) ➔ gemini-3.1-pro-preview
+                  <span style={{color: '#6366F1', fontWeight: 600}}>🔄 自動備援階層：</span>gemini-3.8-flash ➔ gemini-4-hydrogen (調用前確認) ➔ gemini-4-argon (調用前確認) ➔ gemini-4-neon (調用前確認) ➔ gemini-4-carbon (調用前確認)
                 </p>
               </div>
 

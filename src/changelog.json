@@ -1,5 +1,12 @@
 [
   {
+    "version": "v-4d2b07e",
+    "date": "2026-10-26",
+    "title": "Feat: 支援 6 大核心模型與 ~/Models 社群微調掃描，修復視窗拖曳與關閉徹底退出問題",
+    "details": "常規系統更新或效能優化",
+    "bugs": "系統修正：Feat: 支援 6 大核心模型與 ~/Models 社群微調掃描，修復視窗拖曳與關閉徹底退出問題"
+  },
+  {
     "version": "v-fdda7d1",
     "date": "2026-10-26",
     "title": "Feat: 串接 Antigravity Model Hub (127.0.0.1:51123) 本機中樞推論，移除本機模型打包，並建立專屬原生 macOS 圖標",
@@ -341,12 +348,5 @@
     "title": "Perf: 為 WebLLM 本機模型開啟 Streaming 即時串流顯示功能，解決處理大檔案時體感卡頓過久的問題",
     "details": "常規系統更新或效能優化",
     "bugs": "無"
-  },
-  {
-    "version": "v-e6f32b9",
-    "date": "2026-08-16",
-    "title": "Fix: 解決本機模型 Context Window 報錯，將引擎 context_window_size 放寬至 8192，並將分塊大小從 150 行大幅縮減至 40 行確保穩定性",
-    "details": "常規系統更新或效能優化",
-    "bugs": "系統修正：Fix: 解決本機模型 Context Window 報錯，將引擎 context_window_size 放寬至 8192，並將分塊大小從 150 行大幅縮減至 40 行確保穩定性"
   }
 ]
