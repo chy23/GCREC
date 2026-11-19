@@ -1,5 +1,19 @@
 [
   {
+    "version": "v-0cfeca7",
+    "date": "2026-11-19",
+    "title": "Feat: 更新 API 模型調用順序為 Gemini 4 旗艦系列並強制調用前詢問",
+    "details": "常規系統更新或效能優化",
+    "bugs": "無"
+  },
+  {
+    "version": "v-4b0506d",
+    "date": "2026-11-02",
+    "title": "Feat: 升級親師輔導紀錄提示詞，融入通訊軟體雜訊清洗機制與兒少個資去識別化隱私防護",
+    "details": "常規系統更新或效能優化",
+    "bugs": "無"
+  },
+  {
     "version": "v-4d2b07e",
     "date": "2026-10-26",
     "title": "Feat: 支援 6 大核心模型與 ~/Models 社群微調掃描，修復視窗拖曳與關閉徹底退出問題",
@@ -334,19 +348,5 @@
     "title": "Fix: 修正 processFiles 中 generatedText 變數未宣告導致的 ReferenceError",
     "details": "常規系統更新或效能優化",
     "bugs": "系統修正：Fix: 修正 processFiles 中 generatedText 變數未宣告導致的 ReferenceError"
-  },
-  {
-    "version": "v-73b854d",
-    "date": "2026-08-16",
-    "title": "Feat: 應使用者要求，將本機模型從 Qwen 更換為美國 Meta 開源的 Llama-3.2-3B 模型，確保資料不接觸中國模型",
-    "details": "常規系統更新或效能優化",
-    "bugs": "無"
-  },
-  {
-    "version": "v-2cf8d08",
-    "date": "2026-08-16",
-    "title": "Perf: 為 WebLLM 本機模型開啟 Streaming 即時串流顯示功能，解決處理大檔案時體感卡頓過久的問題",
-    "details": "常規系統更新或效能優化",
-    "bugs": "無"
   }
 ]
